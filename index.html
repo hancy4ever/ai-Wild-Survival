@@ -241,36 +241,34 @@
             <!-- 生存状态放在资源库左边 -->
             <div class="status-column">
                 <div class="fusion-area">
-                    <h3>❤️ 生存状态</h3>
+                    <h3>🏝️ 状态</h3>
                     <div id="status-panel">
-                        <p>生命值：<span id="health-value"></span></p>
+                        <p>生存状态值：<span id="survival-value"></span></p>
                         <div class="status-bar-bg">
-                            <div id="health-bar" class="status-bar-fill"></div>
+                            <div id="survival-bar" class="status-bar-fill"></div>
                         </div>
-                        <p style="margin-top:8px;">饱腹值：<span id="hunger-value"></span></p>
+                        <p style="margin-top:8px;">庇护所坚固值：<span id="shelter-durability-value"></span></p>
                         <div class="status-bar-bg">
-                            <div id="hunger-bar" class="status-bar-fill"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="fusion-area" style="margin-top: 10px;">
-                    <h3>🏕️ 庇护所状态</h3>
-                    <div id="shelter-panel">
-                        <p>坚固值：<span id="sturdy-value"></span></p>
-                        <div class="status-bar-bg">
-                            <div id="sturdy-bar" class="status-bar-fill"></div>
-                        </div>
-                        <p style="margin-top:8px;">防雨值：<span id="rain-value"></span></p>
-                        <div class="status-bar-bg">
-                            <div id="rain-bar" class="status-bar-fill"></div>
+                            <div id="shelter-durability-bar" class="status-bar-fill"></div>
                         </div>
                     </div>
                 </div>
                 <div class="fusion-area" style="margin-top: 10px;">
                     <h3>🔍 寻找物资</h3>
-                    <p style="font-size: 0.9em; color: #9ca3af; margin: 4px 0 10px 0;">消耗行动点探索周围，寻找有什么可用的东西</p>
-                    <div style="text-align: center;">
-                        <button class="fusion-btn" onclick="findRawMaterial()" id="find-material-btn">  寻找  ( 1⚡)</button>
+                    <p style="font-size: 0.9em; color: #9ca3af; margin: 4px 0 10px 0;">消耗行动点探索地点，寻找物资</p>
+                    <div id="location-buttons-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- 地点按钮将通过JS动态生成 -->
+                    </div>
+                    <!-- 解锁界面 -->
+                    <div id="unlock-location-modal" style="display: none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 2px dashed #fbbf24;">
+                        <p style="font-size: 0.9em; margin-bottom: 8px; color: #fbbf24;" id="unlock-location-text"></p>
+                        <div id="unlock-location-slot" class="slot" style="margin: 0 auto; width: 80%; cursor: pointer; min-height: 40px;">
+                            拖放物品到此处解锁
+                        </div>
+                        <div style="text-align: center; margin-top: 8px;">
+                            <button class="fusion-btn" onclick="confirmUnlockLocation()" id="confirm-unlock-btn" style="display: none;">确认解锁</button>
+                            <button class="fusion-btn" onclick="cancelUnlockLocation()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; margin-left: 8px;">取消</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -349,16 +347,6 @@
                         ">清空行动槽位</button>
                     </div>
             </div>
-            
-                <!-- 挑战说明 -->
-                <div style="margin-top: 20px; padding: 15px; 
-                            background: rgba(114, 9, 183, 0.1); 
-                            border-radius: 10px; 
-                            border-left: 4px solid #7209b7;">
-                    <p style="color: #9d4edd; font-size: 0.9em; margin: 0;">
-                        💡 提示：达成条件满足时会立即判定为完成。通过日常行动（制作工具、进食、修建庇护所、打猎/钓鱼/砍伐）积累资源，满足挑战条件即可完成挑战。
-                    </p>
-        </div>
                 <div style="margin-top: 16px; text-align: right;">
                     <button onclick="endDay()" style="
                         background: rgba(59,130,246,0.15);
@@ -424,7 +412,6 @@
             "木矛": { emoji: "🔱", tag: "tool", level: 2 },
             "篝火": { emoji: "🔥", tag: "tool", level: 2 },
             "简易鱼叉": { emoji: "🔱", tag: "tool", level: 2 },
-            "简易信号": { emoji: "📡", tag: "signal", level: 2 },
             "烤鱼": { emoji: "🐟", tag: "food", level: 2 },
             "椰肉": { emoji: "🥥", tag: "food", level: 2 },
             "风干果干": { emoji: "🍎", tag: "food", level: 2 },
@@ -445,7 +432,6 @@
             "烤兽肉": { emoji: "🍖", tag: "food", level: 3 },
             "大块鱼肉": { emoji: "🐟", tag: "food", level: 3 },
             "肉干": { emoji: "🥓", tag: "food", level: 3 },
-            "烟雾信号": { emoji: "💨", tag: "signal", level: 3 },
             
             // 四级物资
             "精制木材": { emoji: "🪵", tag: "material", level: 4 },
@@ -455,8 +441,9 @@
             "保存食物": { emoji: "🥫", tag: "food", level: 4 },
             "精制肉排": { emoji: "🥩", tag: "food", level: 4 },
             "海鲜大餐": { emoji: "🦞", tag: "food", level: 4 },
-            "大型信号火": { emoji: "🔥", tag: "signal", level: 4 },
-            "信号镜": { emoji: "🪞", tag: "signal", level: 4 }
+            "大型信号火": { emoji: "🔥", tag: "tool", level: 4 },
+            "浓烟火堆": { emoji: "💨", tag: "tool", level: 4 },
+            "反射信号板": { emoji: "🪞", tag: "material", level: 4 }
         };
 
         // ============== 合成配方表 ==============
@@ -510,15 +497,16 @@
             
             // 三级 -> 四级（工具制作）
             { inputs: ["石刀", "长矛"], result: "复合工具" },
-            { inputs: ["打磨石片", "贝壳"], result: "信号镜" },
+            { inputs: ["打磨石片", "贝壳"], result: "反射信号板" },
             
             // 三级 -> 四级（食物处理）
             { inputs: ["烤鱼串", "椰汁"], result: "营养餐" },
             { inputs: ["熏肉", "椰汁"], result: "保存食物" },
             
-            // 三级 -> 四级（信号制作）
+            // 三级 -> 四级（求救信号制作）
             { inputs: ["火把", "干草"], result: "大型信号火" },
-            { inputs: ["信号镜", "精制木材"], result: "信号镜" },
+            { inputs: ["火把", "木炭"], result: "浓烟火堆" },
+            { inputs: ["反射信号板", "精制木材"], result: "反射信号板" },
             
             // 工具升级配方：两个相同工具 -> 更高级工具
             // Lv2工具 -> Lv3工具
@@ -531,45 +519,34 @@
             { inputs: ["石刀", "石刀"], result: "复合工具" },
             { inputs: ["长矛", "长矛"], result: "复合工具" },
             { inputs: ["火把", "火把"], result: "大型信号火" },
+            { inputs: ["火把", "篝火"], result: "浓烟火堆" },
             { inputs: ["捕鱼网", "捕鱼网"], result: "复合工具" }
         ];
 
         // ============== 行动配方表 ==============
-        // 制作工具配方：原材料 -> 工具（80%工具，20%信号）
+        // 制作工具配方：原材料 -> 工具
         const CRAFT_TOOL_RECIPES = [
-            // 一级原材料 -> 一级工具（只能产生一级工具）
-            { input: "木棍", result: "简易木斧", probability: 0.8, type: "tool" },
-            { input: "木棍", result: "简易信号", probability: 0.2, type: "signal" },
-            { input: "石头", result: "简易木斧", probability: 0.8, type: "tool" },
-            { input: "石头", result: "简易信号", probability: 0.2, type: "signal" },
-            { input: "藤蔓", result: "简易木矛", probability: 0.8, type: "tool" },
-            { input: "藤蔓", result: "简易信号", probability: 0.2, type: "signal" },
-            { input: "干草", result: "简易信号", probability: 1.0, type: "signal" },
-            { input: "椰子", result: "简易信号", probability: 1.0, type: "signal" },
-            { input: "贝壳", result: "简易信号", probability: 1.0, type: "signal" },
+            // 一级原材料 -> 一级工具
+            { input: "木棍", result: "简易木斧", probability: 1.0, type: "tool" },
+            { input: "石头", result: "简易木斧", probability: 1.0, type: "tool" },
+            { input: "藤蔓", result: "简易木矛", probability: 1.0, type: "tool" },
             
             // 二级原材料 -> 二级工具
-            { input: "木板", result: "简易石斧", probability: 0.8, type: "tool" },
-            { input: "木板", result: "简易信号", probability: 0.2, type: "signal" },
-            { input: "粗绳", result: "简易石斧", probability: 0.8, type: "tool" },
-            { input: "粗绳", result: "简易信号", probability: 0.2, type: "signal" },
-            { input: "石片", result: "简易石斧", probability: 0.8, type: "tool" },
-            { input: "石片", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "木板", result: "简易石斧", probability: 1.0, type: "tool" },
+            { input: "粗绳", result: "简易石斧", probability: 1.0, type: "tool" },
+            { input: "石片", result: "简易石斧", probability: 1.0, type: "tool" },
             { input: "木炭", result: "篝火", probability: 1.0, type: "tool" },
             
             // 三级原材料 -> 三级工具
-            { input: "坚韧藤条", result: "长矛", probability: 0.8, type: "tool" },
-            { input: "坚韧藤条", result: "烟雾信号", probability: 0.2, type: "signal" },
-            { input: "打磨石片", result: "石刀", probability: 0.8, type: "tool" },
-            { input: "打磨石片", result: "烟雾信号", probability: 0.2, type: "signal" },
-            { input: "木框架", result: "长矛", probability: 0.8, type: "tool" },
-            { input: "木框架", result: "烟雾信号", probability: 0.2, type: "signal" },
+            { input: "坚韧藤条", result: "长矛", probability: 1.0, type: "tool" },
+            { input: "打磨石片", result: "石刀", probability: 1.0, type: "tool" },
+            { input: "木框架", result: "长矛", probability: 1.0, type: "tool" },
             
             // 四级原材料 -> 四级工具
-            { input: "精制木材", result: "复合工具", probability: 0.8, type: "tool" },
-            { input: "精制木材", result: "大型信号火", probability: 0.2, type: "signal" },
-            { input: "石制工具", result: "复合工具", probability: 0.8, type: "tool" },
-            { input: "石制工具", result: "大型信号火", probability: 0.2, type: "signal" }
+            { input: "精制木材", result: "复合工具", probability: 0.9, type: "tool" },
+            { input: "精制木材", result: "大型信号火", probability: 0.1, type: "tool" },
+            { input: "石制工具", result: "复合工具", probability: 0.9, type: "tool" },
+            { input: "石制工具", result: "浓烟火堆", probability: 0.1, type: "tool" }
         ];
 
         // 捕猎/钓鱼/砍伐工具分类
@@ -635,22 +612,23 @@
             
             if (recipes.length === 0) return null;
             
-            // 根据概率选择结果（80%工具，20%信号）
-            const rand = Math.random();
-            // 先找工具类配方
+            // 根据概率选择结果
             const toolRecipes = recipes.filter(r => r.type === 'tool');
-            const signalRecipes = recipes.filter(r => r.type === 'signal');
-            
-            if (rand < 0.8 && toolRecipes.length > 0) {
-                // 80%概率返回工具
-                return toolRecipes[Math.floor(Math.random() * toolRecipes.length)];
-            } else if (signalRecipes.length > 0) {
-                // 20%概率返回信号
-                return signalRecipes[Math.floor(Math.random() * signalRecipes.length)];
+            if (toolRecipes.length > 0) {
+                // 根据概率随机选择
+                const rand = Math.random();
+                let cumulative = 0;
+                for (const recipe of toolRecipes) {
+                    cumulative += recipe.probability;
+                    if (rand < cumulative) {
+                        return recipe;
+                    }
+                }
+                // 如果没有匹配到，返回第一个
+                return toolRecipes[0];
             }
             
-            // 如果没匹配到，返回第一个
-            return recipes[0];
+            return null;
         }
 
         // 辅助函数：查找捕猎/钓鱼/砍伐配方
@@ -836,7 +814,7 @@
                 title: "挑战二：暴风雨压境",
                 description: "傍晚，海平线上堆起墨色云墙，雷声滚过，潮水拍打礁石。树叶的风向变了，你必须在风暴来临前找到遮蔽或加固营地，否则一夜过后只剩湿透与失温。",
                 solutionHint: "搭个能挡风雨的庇护，准备火种与固定材料，降低失温风险。",
-                victoryCondition: { type: 'shelterStats', sturdy: 50, rain: 50 },
+                victoryCondition: { type: 'shelterStats', shelterDurability: 50 },
                 solved: false
             },
             {
@@ -852,9 +830,15 @@
                 id: 4,
                 day: 7,
                 title: "挑战四：货轮的微光",
-                description: "第七日黄昏，远处海面出现货轮航灯。留给你的只有几分钟，必须用烟雾、光亮或响声打破海风，把存在感送进船员的视线里。",
-                solutionHint: "信号要高、亮或有浓烟，提升被发现概率。",
-                victoryCondition: { type: 'hasItem', tag: 'signal', level: 4, count: 1 },
+                description: "第七日黄昏，远处海面出现货轮航灯。留给你的只有几分钟，必须用烟雾、光亮或反射信号打破海风，把存在感送进船员的视线里。",
+                solutionHint: "准备2个大型信号火，或者3个反射信号板。",
+                victoryCondition: { 
+                    type: 'hasItemMultiple', 
+                    conditions: [
+                        { text: '大型信号火', count: 2 },
+                        { text: '反射信号板', count: 3 }
+                    ]
+                },
                 solved: false
             }
         ];
@@ -862,17 +846,10 @@
         let currentChallengeIndex = 0;
         let currentChallenge = challenges[currentChallengeIndex];
         
-        // 生存基础数值（0-100）
-        // 这里的 hunger 对玩家展示为“饱腹值”
-        let baseStats = {
-            health: 0,
-            hunger: 0
-        };
-        // 庇护所数值（0-100）
-        let shelterStats = {
-            sturdy: 0,
-            rain: 0
-        };
+        // 生存状态值（0-100），合并了生命值和饱腹值
+        let survival = 0;
+        // 庇护所坚固值（0-100），合并了坚固值和防雨值
+        let shelterDurability = 0;
         const MIN_STAT_FOR_START = 20; // 初始过低直接失败阈值
         
         // 合成次数（当前关卡可用）
@@ -884,13 +861,44 @@
         let actionPoints = 7;
         const MAX_ACTION_POINTS = 10;
 
+        // 寻找物资地点定义
+        const LOCATIONS = {
+            forest: {
+                name: '雨林',
+                emoji: '🌲',
+                unlocked: true, // 初始解锁
+                unlockRequirement: null, // 无需解锁物品
+                description: '茂密的雨林中隐藏着各种资源',
+                // 雨林偏好物资：木棍、藤蔓、干草、野果、生肉、鸟蛋等
+                preferredItems: ['木棍', '藤蔓', '干草', '野果', '生肉', '鸟蛋', '木板', '粗绳', '坚韧藤条', '烤兽肉']
+            },
+            beach: {
+                name: '海边',
+                emoji: '🏖️',
+                unlocked: false,
+                unlockRequirement: { text: '简易木叉', tag: 'tool' }, // 需要提交简易木叉来解锁
+                description: '海边可以找到贝壳、海草等物资',
+                // 海边偏好物资：贝壳、海草、生鱼、椰子等
+                preferredItems: ['贝壳', '海草', '生鱼', '椰子', '椰肉', '烤鱼', '椰汁', '大块鱼肉']
+            },
+            cave: {
+                name: '山洞',
+                emoji: '🕳️',
+                unlocked: false,
+                unlockRequirement: { text: '篝火', tag: 'tool' }, // 需要提交篝火来解锁
+                description: '黑暗的山洞中可能有稀有资源',
+                // 山洞偏好物资：石头、石片、木炭、打磨石片、石制工具等
+                preferredItems: ['石头', '石片', '木炭', '打磨石片', '石制工具', '石刀']
+            }
+        };
+
         // 行动类型定义：每个行动有固定的数值变化规则（后续按物资等级倍率）
         const ACTION_TYPES = {
             craftTool: {
                 name: "制作工具",
                 emoji: "🔧",
-                description: "用物资制作工具或者信号设备",
-                statChanges: { health: -2, hunger: -2 },
+                description: "用物资制作工具",
+                statChanges: { health: -2, hunger: -2 }, // 将被合并为survival变化
                 aiPrompt: "描述玩家如何用这件物资制作一个简单工具，以及工具外观与用途",
                 producesItem: true,
                 itemType: "工具",
@@ -900,8 +908,8 @@
             eat: {
                 name: "进食",
                 emoji: "🍚",
-                description: "进食可以补充生命值和饱腹值，并增加行动点",
-                statChanges: { health: +2, hunger: +12 }, // 基础值，会根据食物等级调整
+                description: "进食可以补充生存状态值，并增加行动点",
+                statChanges: { health: +2, hunger: +12 }, // 基础值，会被合并为survival变化，会根据食物等级调整
                 aiPrompt: "描述玩家如何处理并食用这件物资，使其可入口且补充体力",
                 producesItem: false
             },
@@ -909,16 +917,16 @@
                 name: "修建庇护所",
                 emoji: "🏠",
                 description: "加固或建造庇护所，提升安全感",
-                statChanges: { health: 0, hunger: 0 }, // 不再直接修改生命/饱腹，由AI判定庇护提升
-                aiPrompt: "描述玩家如何用这件物资修建或加固庇护所，以及庇护所带来的安全感，并给出对坚固值、防雨值的改善幅度",
+                statChanges: { health: 0, hunger: 0 }, // 不再直接修改生存状态，由AI判定庇护提升
+                aiPrompt: "描述玩家如何用这件物资修建或加固庇护所，以及庇护所带来的安全感，并给出对庇护所坚固值的改善幅度",
                 producesItem: false,
                 improveShelter: true
             },
             huntFish: {
                 name: "打猎/钓鱼/砍伐",
                 emoji: "🎣",
-                description: "设陷阱、下水取食或砍伐木材，获取食物或原材料（过程会消耗体力和饱腹值）",
-                statChanges: { health: -4, hunger: -4 },
+                description: "设陷阱、下水取食或砍伐木材，获取食物或原材料（过程会消耗体力和生存状态）",
+                statChanges: { health: -4, hunger: -4 }, // 将被合并为survival变化
                 aiPrompt: "描述玩家如何用这件物资进行打猎、钓鱼或砍伐，并获得物资",
                 producesItem: true,
                 itemType: "食物或原材料",
@@ -933,80 +941,57 @@
         // ============== 生存数值相关函数 ==============
         function initBaseStats() {
             // 固定初始数值
-            baseStats.health = 70;
-            baseStats.hunger = 70; // 饱腹值
-            shelterStats.sturdy = 0; // 开局为0
-            shelterStats.rain = 0;   // 开局为0
+            survival = 70; // 生存状态值初始为70
+            shelterDurability = 0; // 庇护所坚固值初始为0
             updateBaseStatsUI();
-            updateShelterUI();
             updateDayAndActionUI();
             
             // 如果初始状态就极差，则直接判定为失败开局
-            const minStat = Math.min(baseStats.health, baseStats.hunger);
-            if (minStat < MIN_STAT_FOR_START) {
+            if (survival < MIN_STAT_FOR_START) {
                 showGameOverScreen("你在被冲上荒岛时就已经伤痕累累、饥渴难耐，没有坚持到真正的求生挑战开始。");
             }
         }
 
         function updateBaseStatsUI() {
-            const clamp = (v) => Math.max(0, Math.min(100, v));
-            const h = clamp(baseStats.health);
-            const hu = clamp(baseStats.hunger);
-
-            const hv = document.getElementById('health-value');
-            const huv = document.getElementById('hunger-value');
-            const hb = document.getElementById('health-bar');
-            const hub = document.getElementById('hunger-bar');
-
-            if (!hv) return; // 页面可能已被结算界面替换
-
-            hv.textContent = h;
-            huv.textContent = hu;
-
-            hb.style.width = h + '%';
-            hub.style.width = hu + '%';
-        }
-
-        function updateShelterUI() {
             // 庇护所属性变化后检查挑战是否完成
             checkChallengeCompletion();
             const clamp = (v) => Math.max(0, Math.min(100, v));
-            const sturdy = clamp(shelterStats.sturdy);
-            const rain = clamp(shelterStats.rain);
+            const surv = clamp(survival);
+            const shelter = clamp(shelterDurability);
 
-            const sv = document.getElementById('sturdy-value');
-            const rv = document.getElementById('rain-value');
-            const sb = document.getElementById('sturdy-bar');
-            const rb = document.getElementById('rain-bar');
+            const sv = document.getElementById('survival-value');
+            const sdv = document.getElementById('shelter-durability-value');
+            const sb = document.getElementById('survival-bar');
+            const sdb = document.getElementById('shelter-durability-bar');
 
-            if (!sv) return;
-            sv.textContent = sturdy;
-            rv.textContent = rain;
-            sb.style.width = sturdy + '%';
-            rb.style.width = rain + '%';
+            if (!sv) return; // 页面可能已被结算界面替换
+
+            sv.textContent = surv;
+            sdv.textContent = shelter;
+
+            sb.style.width = surv + '%';
+            sdb.style.width = shelter + '%';
         }
 
         function applyStatChanges(changes) {
             const nonZero = {};
-            const keys = ['health', 'hunger'];
-            keys.forEach(k => {
-                const delta = typeof changes[k] === 'number' ? changes[k] : 0;
-                if (delta !== 0) {
-                    baseStats[k] += delta;
-                    nonZero[k] = delta;
-                }
-            });
+            // 处理生存状态值变化（合并了health和hunger）
+            const survivalDelta = (typeof changes.health === 'number' ? changes.health : 0) + 
+                                  (typeof changes.hunger === 'number' ? changes.hunger : 0);
+            if (survivalDelta !== 0) {
+                survival += survivalDelta;
+                nonZero.survival = survivalDelta;
+            }
             // 夹紧范围
-            baseStats.health = Math.max(0, Math.min(100, baseStats.health));
-            baseStats.hunger = Math.max(0, Math.min(100, baseStats.hunger));
+            survival = Math.max(0, Math.min(100, survival));
 
             updateBaseStatsUI();
             return nonZero;
         }
 
         function isDead() {
-            // 任意一项 <= 10 视为撑不住了
-            return baseStats.health <= 10 || baseStats.hunger <= 10;
+            // 生存状态值 <= 10 视为撑不住了
+            return survival <= 10;
         }
 
         function updateFusionLeftDisplay() {
@@ -1041,23 +1026,41 @@
                 
                 const tagName = tagLabel(condition.tag);
                 conditionText = `拥有 ${required} 个 Lv${condition.level} ${tagName}类物资`;
-            } else if (condition.type === 'shelterStats') {
-                // 检查庇护所属性
-                const sturdyOk = shelterStats.sturdy >= (condition.sturdy || 0);
-                const rainOk = shelterStats.rain >= (condition.rain || 0);
-                completed = sturdyOk && rainOk;
+            } else if (condition.type === 'hasItemMultiple') {
+                // 检查多个条件（二选一）：只要满足其中一个条件即可
+                const conditions = condition.conditions || [];
+                let satisfiedCondition = null;
                 
-                let conditions = [];
-                if (condition.sturdy !== undefined) {
-                    conditions.push(`坚固值 ≥ ${condition.sturdy}`);
-                    if (sturdyOk) current++;
+                for (const cond of conditions) {
+                    const count = playerWords.filter(w => w.text === cond.text).length;
+                    if (count >= (cond.count || 1)) {
+                        satisfiedCondition = cond;
+                        completed = true;
+                        break;
+                    }
                 }
-                if (condition.rain !== undefined) {
-                    conditions.push(`防雨值 ≥ ${condition.rain}`);
-                    if (rainOk) current++;
+                
+                if (satisfiedCondition) {
+                    current = playerWords.filter(w => w.text === satisfiedCondition.text).length;
+                    required = satisfiedCondition.count;
+                    conditionText = `拥有 ${required} 个【${satisfiedCondition.text}】`;
+                } else {
+                    // 显示所有条件（用"或"连接）
+                    const conditionTexts = conditions.map(cond => {
+                        const count = playerWords.filter(w => w.text === cond.text).length;
+                        return `拥有 ${cond.count} 个【${cond.text}】(${count}/${cond.count})`;
+                    });
+                    conditionText = conditionTexts.join(' 或 ');
+                    current = 0;
+                    required = 1;
                 }
-                required = conditions.length;
-                conditionText = conditions.join(' 且 ');
+            } else if (condition.type === 'shelterStats') {
+                // 检查庇护所坚固值
+                const shelterOk = shelterDurability >= (condition.shelterDurability || 0);
+                completed = shelterOk;
+                current = shelterOk ? 1 : 0;
+                required = 1;
+                conditionText = `庇护所坚固值 ≥ ${condition.shelterDurability || 0}`;
             }
             
             const progress = completed ? `✅ 已完成` : `(${current}/${required})`;
@@ -1156,35 +1159,35 @@
             if (isDead()) return;
             const allItems = [...playerWords];
             
-            // 根据挑战结果设置数值变化（保留游戏机制）
+            // 根据挑战结果设置数值变化（保留游戏机制，使用health和hunger以便applyStatChanges合并）
             let statChanges = {};
             if (challenge.id === 1) {
                 // 挑战一：干渴与饥饿
                 if (success) {
-                    statChanges = { health: 0, hunger: +6 };
+                    statChanges = { health: 0, hunger: +6 }; // 合并后为+6
                 } else {
-                    statChanges = { health: -4, hunger: -10 };
+                    statChanges = { health: -4, hunger: -10 }; // 合并后为-14
                 }
             } else if (challenge.id === 2) {
                 // 挑战二：暴风雨
                 if (success) {
-                    statChanges = { health: -2, hunger: -4 };
+                    statChanges = { health: -2, hunger: -4 }; // 合并后为-6
                 } else {
-                    statChanges = { health: -12, hunger: -6 };
+                    statChanges = { health: -12, hunger: -6 }; // 合并后为-18
                 }
             } else if (challenge.id === 3) {
                 // 挑战三：暗夜野兽
                 if (success) {
-                    statChanges = { health: -3, hunger: -4 };
+                    statChanges = { health: -3, hunger: -4 }; // 合并后为-7
                 } else {
-                    statChanges = { health: -15, hunger: -4 };
+                    statChanges = { health: -15, hunger: -4 }; // 合并后为-19
                 }
             } else if (challenge.id === 4) {
                 // 挑战四：货轮逃生
                 if (success) {
                     statChanges = {};
                 } else {
-                    statChanges = { health: -4, hunger: -6 };
+                    statChanges = { health: -4, hunger: -6 }; // 合并后为-10
                 }
             }
             
@@ -1413,6 +1416,190 @@
         let selectedWords = [null, null];  // 两个合成槽位
         let usedWordIds = new Set();  // 已使用的物资ID（防止一个物资被拖到多个位置）
         
+        // ============== 地点相关函数 ==============
+        let currentUnlockingLocation = null; // 当前正在解锁的地点ID
+        let unlockSlotItem = null; // 解锁槽位中的物品
+
+        function renderLocationButtons() {
+            const container = document.getElementById('location-buttons-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+            
+            // 按顺序显示：雨林、海边、山洞
+            const locationOrder = ['forest', 'beach', 'cave'];
+            locationOrder.forEach(locId => {
+                const location = LOCATIONS[locId];
+                const btn = document.createElement('button');
+                btn.className = 'fusion-btn';
+                
+                if (location.unlocked) {
+                    btn.innerHTML = `${location.emoji} ${location.name} ( 1⚡)`;
+                    btn.onclick = () => findRawMaterial(locId);
+                    btn.id = `location-btn-${locId}`;
+                } else {
+                    btn.innerHTML = `🔒 ${location.emoji} ${location.name}`;
+                    btn.onclick = () => showUnlockLocationModal(locId);
+                    btn.style.opacity = '0.6';
+                    btn.style.cursor = 'pointer';
+                    btn.id = `location-btn-${locId}`;
+                }
+                
+                container.appendChild(btn);
+            });
+        }
+
+        function showUnlockLocationModal(locationId) {
+            const location = LOCATIONS[locationId];
+            if (!location || location.unlocked) return;
+
+            const modal = document.getElementById('unlock-location-modal');
+            const textEl = document.getElementById('unlock-location-text');
+            const slotEl = document.getElementById('unlock-location-slot');
+            
+            if (!modal || !textEl || !slotEl) return;
+
+            currentUnlockingLocation = locationId;
+            unlockSlotItem = null;
+            
+            const req = location.unlockRequirement;
+            textEl.textContent = `解锁${location.name}需要：${req.text}（${tagLabel(req.tag)}）`;
+            slotEl.innerHTML = '拖放物品到此处解锁';
+            slotEl.style.borderColor = '#fbbf24';
+            slotEl.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+            
+            document.getElementById('confirm-unlock-btn').style.display = 'none';
+            modal.style.display = 'block';
+
+            // 设置拖放事件
+            setupUnlockSlotDragAndDrop(slotEl);
+        }
+
+        function setupUnlockSlotDragAndDrop(slotEl) {
+            // 清除之前的内容和状态
+            unlockSlotItem = null;
+            slotEl.innerHTML = '拖放物品到此处解锁';
+            slotEl.style.borderColor = '#fbbf24';
+            slotEl.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+            
+            // 移除之前的所有事件监听器（通过克隆节点）
+            const newSlotEl = slotEl.cloneNode(true);
+            slotEl.parentNode.replaceChild(newSlotEl, slotEl);
+            
+            // 获取更新后的元素引用
+            const unlockSlot = document.getElementById('unlock-location-slot');
+            if (!unlockSlot) return;
+            
+            unlockSlot.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                unlockSlot.style.borderColor = '#22c55e';
+                unlockSlot.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+            });
+
+            unlockSlot.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                if (!unlockSlotItem) {
+                    unlockSlot.style.borderColor = '#fbbf24';
+                    unlockSlot.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+                }
+            });
+
+            unlockSlot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const wordId = e.dataTransfer.getData('text/plain');
+                const word = playerWords.find(w => String(w.id) === wordId);
+                
+                if (word && !usedWordIds.has(Number(word.id))) {
+                    const location = LOCATIONS[currentUnlockingLocation];
+                    if (!location) return;
+                    const req = location.unlockRequirement;
+                    if (!req) return;
+                    
+                    // 检查物品是否符合要求
+                    if (word.text === req.text && word.tag === req.tag) {
+                        unlockSlotItem = word;
+                        usedWordIds.add(Number(word.id));
+                        unlockSlot.innerHTML = `
+                            <div style="font-size: 16px; font-weight: 500; color: #fff;">
+                                ${word.emoji} ${word.text}
+                            </div>
+                        `;
+                        unlockSlot.style.borderColor = '#22c55e';
+                        unlockSlot.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
+                        const confirmBtn = document.getElementById('confirm-unlock-btn');
+                        if (confirmBtn) {
+                            confirmBtn.style.display = 'inline-block';
+                        }
+                    } else {
+                        alert(`需要提交【${req.text}】来解锁${location.name}！`);
+                        unlockSlot.style.borderColor = '#fbbf24';
+                        unlockSlot.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+                    }
+                } else if (word && usedWordIds.has(Number(word.id))) {
+                    alert('该物品已被使用！');
+                    unlockSlot.style.borderColor = '#fbbf24';
+                    unlockSlot.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+                }
+            });
+        }
+
+        function confirmUnlockLocation() {
+            if (!currentUnlockingLocation || !unlockSlotItem) return;
+
+            const location = LOCATIONS[currentUnlockingLocation];
+            const req = location.unlockRequirement;
+            
+            // 验证物品
+            if (unlockSlotItem.text === req.text && unlockSlotItem.tag === req.tag) {
+                // 消耗物品
+                consumeItem(unlockSlotItem, 1);
+                renderWordInventory();
+                
+                // 解锁地点
+                location.unlocked = true;
+                
+                // 隐藏解锁界面
+                cancelUnlockLocation();
+                
+                // 更新按钮显示
+                renderLocationButtons();
+                
+                // 显示解锁成功消息
+                const resultsDiv = document.getElementById('fusion-results');
+                if (resultsDiv) {
+                    const resultCard = document.createElement('div');
+                    resultCard.className = 'result-card';
+                    resultCard.style.borderLeftColor = '#fbbf24';
+                    resultCard.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="font-size: 24px;">🔓</span>
+                            <span style="font-size: 18px; font-weight: 500;">解锁新地点</span>
+                        </div>
+                        <p style="margin-bottom: 8px;">
+                            使用【${unlockSlotItem.emoji} ${unlockSlotItem.text}】解锁了【${location.emoji} ${location.name}】！
+                        </p>
+                        <div style="text-align: right; font-size: 12px; opacity: 0.7; margin-top: 8px;">
+                            ${new Date().toLocaleTimeString()}
+                        </div>
+                    `;
+                    resultsDiv.prepend(resultCard);
+                    resultsDiv.scrollTop = 0;
+                }
+            }
+        }
+
+        function cancelUnlockLocation() {
+            if (unlockSlotItem) {
+                usedWordIds.delete(unlockSlotItem.id);
+                unlockSlotItem = null;
+            }
+            currentUnlockingLocation = null;
+            const modal = document.getElementById('unlock-location-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
         // ============== 初始化 ==============
         function initGame() {
             // 初始化物资库存
@@ -1430,6 +1617,9 @@
             
             // 初始化拖拽功能
             initDragAndDrop();
+            
+            // 初始化地点按钮
+            renderLocationButtons();
         }
         
         // 渲染词语库存
@@ -1438,7 +1628,6 @@
                 case 'food': return '食物';
                 case 'material': return '原材料';
                 case 'tool': return '工具';
-                case 'signal': return '信号';
                 default: return '未知';
             }
         }
@@ -1450,7 +1639,7 @@
         function defaultUses(tag) {
             if (tag === 'material') return 2;
             if (tag === 'tool') return 5;
-            if (tag === 'food' || tag === 'signal') return 1;
+            if (tag === 'food') return 1;
             return 1;
         }
 
@@ -1500,8 +1689,14 @@
         
         // ============== 拖拽功能 ==============
         function initDragAndDrop() {
-            const slots = document.querySelectorAll('.slot');
-            slots.forEach((slot, index) => {
+            // 只处理合成槽位（slot1和slot2），忽略其他slot
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+            const fusionSlots = [slot1, slot2];
+            
+            fusionSlots.forEach((slot, index) => {
+                if (!slot) return;
+                
                 slot.addEventListener('dragover', e => {
                     e.preventDefault();
                     slot.style.borderColor = '#4cc9f0';
@@ -1760,27 +1955,27 @@
             let defaultChanges = {};
             
             if (actionKey === 'eat') {
-                // 进食逻辑：系统规定的固定数值，有合理梯度
+                // 进食逻辑：系统规定的固定数值，有合理梯度（合并为survival变化）
                 // 一级食物：生的或难咽下的，效果差，可能扣生命值
                 if (lvl === 1) {
                     defaultChanges = {
                         health: -1,  // 一级食物可能轻微扣生命值
-                        hunger: 5     // 一级食物加的饱腹值少
+                        hunger: 5     // 一级食物加的饱腹值少，合并后为+4
                     };
                 } else if (lvl === 2) {
-                    // 二级食物：简单处理过的，效果一般
+                    // 二级食物：简单处理过的，效果一般，合并后为+13
                     defaultChanges = {
                         health: 3,
                         hunger: 10
                     };
                 } else if (lvl === 3) {
-                    // 三级食物：较好处理的，效果不错
+                    // 三级食物：较好处理的，效果不错，合并后为+21
                     defaultChanges = {
                         health: 6,
                         hunger: 15
                     };
                 } else {
-                    // 四级食物：精心制作的，效果很好
+                    // 四级食物：精心制作的，效果很好，合并后为+30
                     defaultChanges = {
                         health: 10,
                         hunger: 20
@@ -1894,6 +2089,7 @@
                 updateDayAndActionUI();
             } else {
                 // 其他行动：使用AI返回的数值变化（如果AI提供了），否则使用系统默认值
+                let finalHealthDelta = aiResult.healthDelta !== null ? aiResult.healthDelta : defaultChanges.health;
                 let finalHungerDelta = aiResult.hungerDelta !== null ? aiResult.hungerDelta : defaultChanges.hunger;
                 
                 // 打猎/钓鱼/砍伐行动不准增加饱腹值
@@ -1902,7 +2098,7 @@
                 }
                 
                 finalChanges = {
-                    health: aiResult.healthDelta !== null ? aiResult.healthDelta : defaultChanges.health,
+                    health: finalHealthDelta,
                     hunger: finalHungerDelta
                 };
             }
@@ -1924,11 +2120,8 @@
             
             // 构建数值变化显示文本
             const changeTexts = [];
-            if (nonZeroChanges.health) {
-                changeTexts.push(`生命值 ${nonZeroChanges.health > 0 ? '+' : ''}${nonZeroChanges.health}`);
-            }
-            if (nonZeroChanges.hunger) {
-                changeTexts.push(`饱腹值 ${nonZeroChanges.hunger > 0 ? '+' : ''}${nonZeroChanges.hunger}`);
+            if (nonZeroChanges.survival !== undefined && nonZeroChanges.survival !== 0) {
+                changeTexts.push(`生存状态值 ${nonZeroChanges.survival > 0 ? '+' : ''}${nonZeroChanges.survival}`);
             }
             // 如果是进食行动，显示行动点增加
             if (actionKey === 'eat') {
@@ -1945,20 +2138,15 @@
 
             // 如果是庇护提升，先读取AI返回的提升幅度并更新shelterChangeText
             if (action.improveShelter && aiResult) {
+                // 合并sturdyDelta和rainDelta为shelterDurabilityDelta
                 const sturdyDelta = aiResult.sturdyDelta ? parseInt(aiResult.sturdyDelta, 10) : 0;
                 const rainDelta = aiResult.rainDelta ? parseInt(aiResult.rainDelta, 10) : 0;
-                if (!isNaN(sturdyDelta)) {
-                    shelterStats.sturdy = Math.max(0, Math.min(100, shelterStats.sturdy + sturdyDelta));
-                }
-                if (!isNaN(rainDelta)) {
-                    shelterStats.rain = Math.max(0, Math.min(100, shelterStats.rain + rainDelta));
-                }
-                updateShelterUI();
-                const parts = [];
-                if (!isNaN(sturdyDelta) && sturdyDelta !== 0) parts.push(`坚固值${sturdyDelta > 0 ? '+' : ''}${sturdyDelta}`);
-                if (!isNaN(rainDelta) && rainDelta !== 0) parts.push(`防雨值${rainDelta > 0 ? '+' : ''}${rainDelta}`);
-                if (parts.length) {
-                    shelterChangeText = ' | ' + parts.join('，');
+                const shelterDurabilityDelta = (isNaN(sturdyDelta) ? 0 : sturdyDelta) + (isNaN(rainDelta) ? 0 : rainDelta);
+                
+                if (shelterDurabilityDelta !== 0) {
+                    shelterDurability = Math.max(0, Math.min(100, shelterDurability + shelterDurabilityDelta));
+                    updateBaseStatsUI(); // 现在这个函数也更新庇护所UI
+                    shelterChangeText = ` | 庇护所坚固值${shelterDurabilityDelta > 0 ? '+' : ''}${shelterDurabilityDelta}`;
                 }
             }
 
@@ -2050,10 +2238,10 @@
 请返回JSON，格式：
 {
   "description": "50-80字行动过程描述",
-  "healthDelta": "整数，可正可负，表示生命值变化（可选，如果不提供则使用系统默认值）",
-  "hungerDelta": "整数，可正可负，表示饱腹值变化（可选，如果不提供则使用系统默认值）",
-  "sturdyDelta": "整数，可正可负，表示庇护坚固值变化（仅修建庇护所时需要）",
-  "rainDelta": "整数，可正可负，表示防雨值变化（仅修建庇护所时需要）"
+  "healthDelta": "整数，可正可负，表示生命值变化（可选，如果不提供则使用系统默认值，会与hungerDelta合并为生存状态值变化）",
+  "hungerDelta": "整数，可正可负，表示饱腹值变化（可选，如果不提供则使用系统默认值，会与healthDelta合并为生存状态值变化）",
+  "sturdyDelta": "整数，可正可负，表示庇护坚固值变化（仅修建庇护所时需要，会与rainDelta合并为庇护所坚固值变化）",
+  "rainDelta": "整数，可正可负，表示防雨值变化（仅修建庇护所时需要，会与sturdyDelta合并为庇护所坚固值变化）"
 }
 重要规则：
 - 对于"制作工具"行动：描述玩家如何使用【${item.text}】制作出【${resultItem ? resultItem.text : '工具'}】的过程。
@@ -2063,14 +2251,14 @@
   * 如果使用矛/刀类工具获得"兽肉类食物"（如生肉、小兽肉、烤兽肉等），必须描述在丛林、森林中打猎小型动物（如野兔、鸟类等）的过程，场景应该在丛林、森林等。
   * 如果使用鱼叉/渔网类工具获得"鱼类食物"（如生鱼、大块鱼肉等），必须描述在河流、海边捕鱼的过程，场景应该在水边、海边等。
   * 描述必须与工具类型和获得的物资完全匹配，不能出现"使用木矛在丛林里捕捉生鱼"这种不合理的情况。
-  * 重要：打猎/钓鱼/砍伐行动会消耗体力和饱腹值，hungerDelta必须是0或负数，不能是正数（不能增加饱腹值）。
+  * 重要：打猎/钓鱼/砍伐行动会消耗体力和生存状态，hungerDelta必须是0或负数，不能是正数（不能增加生存状态值）。
 - 对于"修建庇护所"行动：描述玩家如何使用【${item.text}】修建或加固庇护所的过程。根据物资的类型、等级和名称，合理评判对庇护所的改善效果：
   * 物资类型：工具类物资通常能提供更好的坚固值，原材料类物资可能更适合防雨
   * 物资等级：等级越高，改善效果越好（Lv1: 5-10, Lv2: 10-15, Lv3: 15-20, Lv4: 20-25）
   * 物资名称：根据物资的实际用途判断（如"木板"可能更偏向坚固值，"粗绳"可能更偏向防雨值，"篝火"可能两者都有）
-  * 必须给出合理的 sturdyDelta 和 rainDelta（范围 0 到 +25，根据物资特性分配，总和不超过物资等级*8）
+  * 必须给出合理的 sturdyDelta 和 rainDelta（范围 0 到 +25，根据物资特性分配，总和不超过物资等级*8，系统会将两者合并为庇护所坚固值变化）
 - 对于"进食"行动：描述玩家如何处理并食用【${item.text}】的过程。注意：数值变化由系统规定，AI只需要生成描述，不需要返回healthDelta和hungerDelta。
-- 对于其他行动：healthDelta 和 hungerDelta 是可选的，如果不提供则使用系统默认值。`;
+- 对于其他行动：healthDelta 和 hungerDelta 是可选的，如果不提供则使用系统默认值。系统会将healthDelta和hungerDelta合并为生存状态值变化。`;
 
                 let userPrompt = `行动类型：${action.name}（${action.description}）
 使用的物资：${item.text} (Lv${item.level || 1}·${tagLabel(item.tag)})
@@ -2493,12 +2681,19 @@ ${action.aiPrompt}
                 }
             });
             selectedWords = [null, null];
-            const slots = document.querySelectorAll('.slot');
-            slots.forEach(slot => {
-                slot.innerHTML = '拖放词语';
-                slot.style.background = 'rgba(255, 255, 255, 0.05)';
-                slot.style.borderColor = '#f72585';
-            });
+            // 只重置合成槽位
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+            if (slot1) {
+                slot1.innerHTML = '拖放物资';
+                slot1.style.background = 'rgba(255, 255, 255, 0.05)';
+                slot1.style.borderColor = '#f72585';
+            }
+            if (slot2) {
+                slot2.innerHTML = '拖放物资';
+                slot2.style.background = 'rgba(255, 255, 255, 0.05)';
+                slot2.style.borderColor = '#f72585';
+            }
         }
         
         // 清空行动槽位（与执行行动后的清空逻辑一致）
@@ -2681,7 +2876,7 @@ ${action.aiPrompt}
         }
 
         // ============== 寻找原材料功能 ==============
-        async function findRawMaterial() {
+        async function findRawMaterial(locationId) {
             // 检查行动点
             if (actionPoints <= 0) {
                 alert('今日行动点已用完');
@@ -2694,8 +2889,15 @@ ${action.aiPrompt}
                 return;
             }
 
+            // 检查地点是否解锁
+            const location = LOCATIONS[locationId];
+            if (!location || !location.unlocked) {
+                alert('该地点尚未解锁！');
+                return;
+            }
+
             // 禁用按钮并显示加载状态，防止重复点击
-            const btn = document.getElementById('find-material-btn');
+            const btn = document.getElementById(`location-btn-${locationId}`);
             const originalText = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.disabled = true;
@@ -2705,28 +2907,66 @@ ${action.aiPrompt}
             }
 
             try {
-                // 根据概率决定等级：60% Lv1, 30% Lv2, 10% Lv3
-                const randLevel = Math.random();
-                let materialLevel;
-                if (randLevel < 0.6) {
-                    materialLevel = 1;
-                } else if (randLevel < 0.9) {
-                    materialLevel = 2;
-                } else {
-                    materialLevel = 3;
+                // 根据不同地点决定物资概率
+                let materialLevel, itemType, typeName;
+                
+                if (locationId === 'forest') {
+                    // 雨林：60% Lv1, 30% Lv2, 10% Lv3；70%原材料，30%食物
+                    const randLevel = Math.random();
+                    if (randLevel < 0.6) {
+                        materialLevel = 1;
+                    } else if (randLevel < 0.9) {
+                        materialLevel = 2;
+                    } else {
+                        materialLevel = 3;
+                    }
+                    const randType = Math.random();
+                    itemType = randType < 0.7 ? 'material' : 'food';
+                    typeName = itemType === 'material' ? '原材料' : '食物';
+                } else if (locationId === 'beach') {
+                    // 海边：50% Lv1, 40% Lv2, 10% Lv3；更多食物（贝壳、海草等）
+                    const randLevel = Math.random();
+                    if (randLevel < 0.5) {
+                        materialLevel = 1;
+                    } else if (randLevel < 0.9) {
+                        materialLevel = 2;
+                    } else {
+                        materialLevel = 3;
+                    }
+                    const randType = Math.random();
+                    itemType = randType < 0.6 ? 'food' : 'material'; // 海边更多食物
+                    typeName = itemType === 'material' ? '原材料' : '食物';
+                } else if (locationId === 'cave') {
+                    // 山洞：30% Lv1, 50% Lv2, 20% Lv3；更多原材料（石头、木炭等）
+                    const randLevel = Math.random();
+                    if (randLevel < 0.3) {
+                        materialLevel = 1;
+                    } else if (randLevel < 0.8) {
+                        materialLevel = 2;
+                    } else {
+                        materialLevel = 3;
+                    }
+                    const randType = Math.random();
+                    itemType = randType < 0.7 ? 'material' : 'food'; // 山洞更多原材料
+                    typeName = itemType === 'material' ? '原材料' : '食物';
                 }
 
-                // 根据概率决定物资类型：70%原材料，30%食物
-                const randType = Math.random();
-                const itemType = randType < 0.7 ? 'material' : 'food';
-                const typeName = itemType === 'material' ? '原材料' : '食物';
-
                 // 从MATERIAL_DATABASE中筛选符合等级和类型的物资
-                const availableItems = Object.entries(MATERIAL_DATABASE)
+                // 优先从地点偏好列表中筛选
+                const preferredItems = location.preferredItems || [];
+                const allAvailableItems = Object.entries(MATERIAL_DATABASE)
                     .filter(([name, info]) => 
                         info.level === materialLevel && 
                         info.tag === itemType
                     );
+                
+                // 筛选偏好物品
+                const preferredAvailable = allAvailableItems.filter(([name, info]) => 
+                    preferredItems.includes(name)
+                );
+                
+                // 如果偏好列表中有符合条件的，优先选择；否则从所有符合条件的物资中随机选择
+                const availableItems = preferredAvailable.length > 0 ? preferredAvailable : allAvailableItems;
                 
                 if (availableItems.length === 0) {
                     throw new Error(`找不到 Lv${materialLevel} 的${typeName}类物资`);
@@ -2752,16 +2992,16 @@ ${action.aiPrompt}
                                 {
                                     role: "system",
                                     content: `你是一个荒岛求生游戏的叙事者。
-请根据玩家在荒岛上探索的场景，生成一段简短描述（1-2句话），描述玩家如何找到【${name}】这个物资。
-要求：语言简洁有力，有代入感，符合荒岛求生的氛围。
+请根据玩家在【${location.name}】探索的场景，生成一段简短描述（1-2句话），描述玩家如何找到【${name}】这个物资。
+要求：语言简洁有力，有代入感，符合荒岛求生的氛围，要体现【${location.name}】的环境特点。
 返回JSON格式：
 {
-  "description": "简短描述玩家如何找到这个物资（1-2句话）"
+  "description": "简短描述玩家如何在${location.name}找到这个物资（1-2句话）"
 }`
                                 },
                                 {
                                     role: "user",
-                                    content: `当前第 ${currentDay} 天，玩家找到了【${name}】(Lv${materialLevel}·${typeName})。请生成一段描述。`
+                                    content: `当前第 ${currentDay} 天，玩家在【${location.name}】找到了【${name}】(Lv${materialLevel}·${typeName})。请生成一段描述。`
                                 }
                             ],
                             temperature: 0.8,
@@ -2804,14 +3044,11 @@ ${action.aiPrompt}
                     resultCard.style.borderLeftColor = '#4cc9f0';
                     resultCard.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <span style="font-size: 24px;">🔍</span>
-                            <span style="font-size: 18px; font-weight: 500;">寻找物资</span>
+                            <span style="font-size: 24px;">${location.emoji}</span>
+                            <span style="font-size: 18px; font-weight: 500;">${location.name} - 寻找物资</span>
                         </div>
                         <p style="margin-bottom: 8px;">
                             <strong>获得物资：</strong>${emoji} ${name} (Lv${materialLevel}·${tagLabel(itemType)})
-                        </p>
-                        <p style="margin-bottom: 8px; color: #4cc9f0;">
-                            <strong>数值变化：</strong>行动点 -1
                         </p>
                         <div style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px;">
                             <p style="line-height: 1.6;"><strong>行动过程：</strong>${description}</p>
@@ -2831,7 +3068,11 @@ ${action.aiPrompt}
                 // 恢复按钮状态
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = originalText;
+                    if (location && location.unlocked) {
+                        btn.innerHTML = `${location.emoji} ${location.name} ( 1⚡)`;
+                    } else {
+                        btn.innerHTML = originalText;
+                    }
                     btn.style.opacity = '1';
                     btn.style.cursor = 'pointer';
                 }
@@ -2841,7 +3082,7 @@ ${action.aiPrompt}
         // ============== 游戏结束与性格评语 ==============
         function calcFinalScore() {
             // 简单评分：当前两项平均值 + 合成次数奖励
-            const avgStat = (baseStats.health + baseStats.hunger) / 2;
+            const avgStat = survival;
             const fusionScore = fusionResults.length * 5;
             return Math.round(avgStat + fusionScore);
         }
@@ -2872,7 +3113,7 @@ ${action.aiPrompt}
                                 content: `你是一个带点温柔毒舌风格的“荒岛求生性格测试”解读者。
                                 请根据玩家在荒岛上【合成出来的物资】以及整体资源选择倾向，为TA生成一段简短的性格解读。
                                 特别注意：请优先从以下方面来总结：
-                                - 他更偏向哪种生存风格？例如：喜欢造工具、囤食物、强化庇护、防御为主、爱折腾信号装置等。
+                                - 他更偏向哪种生存风格？例如：喜欢造工具、囤食物、强化庇护、防御为主等。
                                 - 这些物资背后体现的是谨慎、冒险、创造力、未雨绸缪，还是“躺平佛系”等性格特征？
                                 - 可以适当引用一两个具体物资作为例子（例如“你造了一堆武器，却忘了多准备点水”）。
                                 返回JSON，格式如下：
@@ -2888,7 +3129,7 @@ ${action.aiPrompt}
                                 最终评分：${score}
                                 资源库中常见物资：${inventoryText}
                                 合成出来的代表性物资：${craftedItemsText || '本局几乎没有成功合成新的物资'}
-                                当前基础数值：health=${baseStats.health}, hunger=${baseStats.hunger}`
+                                当前基础数值：survival=${survival}, shelterDurability=${shelterDurability}`
                             }
                         ],
                         temperature: 0.7,
@@ -3082,38 +3323,32 @@ ${action.aiPrompt}
             
             // 每天结束时的基础消耗
             // 根据庇护所状态决定扣减：系统规定的固定数值，有合理梯度
-            // 坚固值和防雨值越高，扣减越少
-            const sturdy = shelterStats.sturdy || 0;
-            const rain = shelterStats.rain || 0;
-            const avgShelter = (sturdy + rain) / 2; // 平均庇护所属性
+            // 庇护所坚固值越高，扣减越少
+            const shelter = shelterDurability || 0;
             
-            // 根据平均庇护所属性计算扣减（0-100范围）
-            let healthLoss, hungerLoss;
-            if (avgShelter >= 80) {
-                // 庇护所很好：扣减很少
-                healthLoss = 2;
-                hungerLoss = 4;
-            } else if (avgShelter >= 60) {
-                // 庇护所较好：扣减较少
-                healthLoss = 4;
-                hungerLoss = 6;
-            } else if (avgShelter >= 40) {
-                // 庇护所一般：扣减中等
-                healthLoss = 6;
-                hungerLoss = 8;
-            } else if (avgShelter >= 20) {
-                // 庇护所较差：扣减较多
-                healthLoss = 8;
-                hungerLoss = 10;
+            // 根据庇护所坚固值计算扣减（0-100范围）
+            let survivalLoss;
+            if (shelter >= 80) {
+                // 庇护所很好：扣减很少，合并后为-6
+                survivalLoss = 6;
+            } else if (shelter >= 60) {
+                // 庇护所较好：扣减较少，合并后为-10
+                survivalLoss = 10;
+            } else if (shelter >= 40) {
+                // 庇护所一般：扣减中等，合并后为-14
+                survivalLoss = 14;
+            } else if (shelter >= 20) {
+                // 庇护所较差：扣减较多，合并后为-18
+                survivalLoss = 18;
             } else {
-                // 庇护所很差：扣减很多
-                healthLoss = 12;
-                hungerLoss = 14;
+                // 庇护所很差：扣减很多，合并后为-26
+                survivalLoss = 26;
             }
             
-            applyStatChanges({ health: -healthLoss, hunger: -hungerLoss });
+            // 使用health和hunger字段以便applyStatChanges正确处理
+            applyStatChanges({ health: -Math.floor(survivalLoss / 2), hunger: -Math.ceil(survivalLoss / 2) });
             logDayEventToResults("日终消耗",
-                `庇护坚固 ${Math.round(shelterStats.sturdy)}，防雨 ${Math.round(shelterStats.rain)}，扣除 生命 ${healthLoss} / 饱腹 ${hungerLoss}`);
+                `庇护所坚固值 ${Math.round(shelterDurability)}，扣除 生存状态值 ${survivalLoss}`);
             if (isDead()) {
                 showGameOverScreen("在日复一日的消耗中，你的身体终于支撑不住。");
                 return;
