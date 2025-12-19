@@ -1,0 +1,3178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>荒岛求生大挑战 - 物资炼金术</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .word-item.usable {
+            box-shadow: 0 0 0 2px rgba(114, 9, 183, 0.3);
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #4cc9f0;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 2.0fr 1.8fr 1.4fr; 
+            gap: 20px;
+            height: auto;
+        }
+        
+        /* 左侧：资源与状态 */
+        .left-pane {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            height: 100%;
+        }
+        .status-column {
+            flex: 0 0 220px;
+        }
+        .left-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .inventory {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 55vh;
+            overflow-y: auto;
+        }
+        /* 资源库一排两个物资 */
+        #word-inventory {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        
+        .word-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: grab;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .word-item:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .word-emoji {
+            font-size: 24px;
+        }
+        
+        /* 中间：游戏区域 */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .room-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            flex-grow: 1;
+            border: 2px solid #4cc9f0;
+        }
+        
+        .fusion-area {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 200px;
+            border: 2px dashed #4361ee;
+        }
+        
+        .slot {
+            display: block;
+            width: 100%;
+            min-height: 52px;
+            margin: 6px 0;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 2px dashed #f72585;
+            font-size: 16px;
+            color: #ccc;
+            text-align: left;
+            line-height: 1.4;
+        }
+        
+        .fusion-btn {
+            background: linear-gradient(45deg, #f72585, #4361ee);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .fusion-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(247, 37, 133, 0.5);
+        }
+        
+        /* 右侧：结果展示 */
+        .results {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: calc(100vh - 40px);
+        }
+        
+        #fusion-results {
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+            max-height: calc(100vh - 120px);
+            padding-right: 10px;
+            /* 自定义滚动条样式 */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(76, 201, 240, 0.5) rgba(255, 255, 255, 0.1);
+        }
+        
+        #fusion-results::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #fusion-results::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        #fusion-results::-webkit-scrollbar-thumb {
+            background: rgba(76, 201, 240, 0.5);
+            border-radius: 10px;
+        }
+        
+        #fusion-results::-webkit-scrollbar-thumb:hover {
+            background: rgba(76, 201, 240, 0.7);
+        }
+        
+        .result-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 5px solid #4cc9f0;
+        }
+        
+        .word-image {
+            width: 100%;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        /* 简单的状态条样式 */
+        .status-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .status-bar-fill {
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg,#22c55e,#16a34a);
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .left-pane {
+                flex-direction: column;
+            }
+            .inventory {
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; margin-bottom: 20px; color: #4cc9f0;">🏝️ 荒岛求生大挑战 · 物资炼金术 🏝️</h1>
+    
+    <div class="container">
+        <!-- 左侧：生存状态 + 资源库存 -->
+        <div class="left-pane">
+            <!-- 生存状态放在资源库左边 -->
+            <div class="status-column">
+                <div class="fusion-area">
+                    <h3>❤️ 生存状态</h3>
+                    <div id="status-panel">
+                        <p>生命值：<span id="health-value"></span></p>
+                        <div class="status-bar-bg">
+                            <div id="health-bar" class="status-bar-fill"></div>
+                        </div>
+                        <p style="margin-top:8px;">饱腹值：<span id="hunger-value"></span></p>
+                        <div class="status-bar-bg">
+                            <div id="hunger-bar" class="status-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fusion-area" style="margin-top: 10px;">
+                    <h3>🏕️ 庇护所状态</h3>
+                    <div id="shelter-panel">
+                        <p>坚固值：<span id="sturdy-value"></span></p>
+                        <div class="status-bar-bg">
+                            <div id="sturdy-bar" class="status-bar-fill"></div>
+                        </div>
+                        <p style="margin-top:8px;">防雨值：<span id="rain-value"></span></p>
+                        <div class="status-bar-bg">
+                            <div id="rain-bar" class="status-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fusion-area" style="margin-top: 10px;">
+                    <h3>🔍 寻找物资</h3>
+                    <p style="font-size: 0.9em; color: #9ca3af; margin: 4px 0 10px 0;">消耗行动点探索周围，寻找有什么可用的东西</p>
+                    <div style="text-align: center;">
+                        <button class="fusion-btn" onclick="findRawMaterial()" id="find-material-btn">  寻找  ( 1⚡)</button>
+                    </div>
+                </div>
+            </div>
+            <div class="left-main">
+        <div class="inventory">
+                    <h3>🎒 我的资源库</h3>
+            <div id="word-inventory">
+                        <!-- 物资会通过JS动态添加 -->
+                    </div>
+                </div>
+                <!-- 合成区域移动到资源库下方 -->
+                <div class="fusion-area">
+                    <h3>⚗️ 物资合成</h3>
+                    <p>拖拽两个物资到下面的槽位（每轮合成次数有限）：</p>
+                    <p style="margin-top:4px;color:#fbbf24;">剩余合成次数：<span id="fusion-left">0</span></p>
+                    
+                    <div style="margin: 16px 0;">
+                        <div class="slot" id="slot1">拖放物资</div>
+                        <div style="text-align:center; margin:6px 0; font-size:22px; color:#f72585;">＋</div>
+                        <div class="slot" id="slot2">拖放物资</div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button class="fusion-btn" onclick="performFusion()">开始合成！( 1⚡)</button>
+                        <button class="fusion-btn" onclick="resetSlots()" style="margin-left: 10px; background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5;">清空</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中间：游戏区域 -->
+        <div class="game-area">
+            <!-- 当前挑战 -->
+        <div class="room-display" id="room-display">
+                <h3>🌊 当前生存挑战</h3>
+            <p id="challenge-text">加载中...</p>
+            
+                <!-- 挑战场景生图 -->
+                <div id="challenge-image" style="margin-top: 15px;"></div>
+                
+                <!-- 行动槽位：拖动物资选择行动 -->
+                <div style="margin-top: 20px; padding: 20px; 
+                            border: 3px dashed #22c55e; 
+                        border-radius: 15px; 
+                        text-align: center;
+                            background: rgba(34, 197, 94, 0.05);
+                            min-height: 80px;">
+                    <p style="color: #22c55e; margin-bottom: 12px; font-weight: 500;">
+                        ( 1⚡) 行动槽位：拖动物资到这里选择行动
+                    </p>
+                    <div id="action-slot" class="action-slot" style="
+                        width: 100%;
+                        min-height: 60px;
+                        background: rgba(255, 255, 255, 0.05);
+                        border-radius: 10px;
+                        border: 2px dashed #22c55e;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #9ca3af;
+                        font-size: 14px;
+                        margin-bottom: 12px;
+                    ">拖放物资到此处</div>
+                    <!-- 行动选择菜单（拖入物资后显示） -->
+                    <div id="action-menu" style="display: none;"></div>
+                    <!-- 清空行动槽位按钮 -->
+                    <div style="text-align: center; margin-top: 8px;">
+                        <button onclick="resetActionSlot()" style="
+                            background: rgba(239, 68, 68, 0.15);
+                            border: 1px solid rgba(239, 68, 68, 0.7);
+                            color: #fecaca;
+                            padding: 4px 12px;
+                            border-radius: 999px;
+                            font-size: 12px;
+                            cursor: pointer;
+                        ">清空行动槽位</button>
+                    </div>
+            </div>
+            
+                <!-- 挑战说明 -->
+                <div style="margin-top: 20px; padding: 15px; 
+                            background: rgba(114, 9, 183, 0.1); 
+                            border-radius: 10px; 
+                            border-left: 4px solid #7209b7;">
+                    <p style="color: #9d4edd; font-size: 0.9em; margin: 0;">
+                        💡 提示：达成条件满足时会立即判定为完成。通过日常行动（制作工具、进食、修建庇护所、打猎/钓鱼/砍伐）积累资源，满足挑战条件即可完成挑战。
+                    </p>
+        </div>
+                <div style="margin-top: 16px; text-align: right;">
+                    <button onclick="endDay()" style="
+                        background: rgba(59,130,246,0.15);
+                        border: 1px solid rgba(59,130,246,0.7);
+                        color: #bfdbfe;
+                        padding: 6px 14px;
+                        border-radius: 999px;
+                        font-size: 13px;
+                        cursor: pointer;
+                    ">结束今天 ▶</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧：结果展示 -->
+        <div class="results">
+            <!-- 行动点显示板块 -->
+                <div id="action-points-display" style="padding: 15px; background: rgba(244, 243, 237, 0.1); border-radius: 10px; border-left: 4px solid #ffd492;">
+                    <p style="font-size: 1.1em; color: #f7f2ec; margin: 0;">
+                        <span id="day-action-status"></span>
+                    </p>
+                </div>
+            
+            <h3 style="margin-top: 25px;">📜 合成记录与事件</h3>
+            <div id="fusion-results">
+                <!-- 合成结果会动态添加到这里 -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ============== 核心数据 ==============
+        // 预置的基础物资（开局仅有1个Lv1原材料"木棍"）
+        const basicWords = [
+            { id: 1, text: "木棍", emoji: "🌿", tag: "material", level: 1, usesLeft: 2 }
+        ];
+
+        // ============== 完整物资列表 ==============
+        // 定义所有1-4级的物资，用于合成配方匹配
+        const MATERIAL_DATABASE = {
+            // 一级物资
+            "木棍": { emoji: "🌿", tag: "material", level: 1 },
+            "石头": { emoji: "🪨", tag: "material", level: 1 },
+            "藤蔓": { emoji: "🌿", tag: "material", level: 1 },
+            "干草": { emoji: "🌾", tag: "material", level: 1 },
+            "椰子": { emoji: "🥥", tag: "material", level: 1 },
+            "贝壳": { emoji: "🐚", tag: "material", level: 1 },
+            "生鱼": { emoji: "🐟", tag: "food", level: 1 },
+            "野果": { emoji: "🍎", tag: "food", level: 1 },
+            "海草": { emoji: "🌿", tag: "food", level: 1 },
+            "生肉": { emoji: "🥩", tag: "food", level: 1 },
+            "鸟蛋": { emoji: "🥚", tag: "food", level: 1 },
+            "简易木斧": { emoji: "🪓", tag: "tool", level: 1 },
+            "简易木矛": { emoji: "🔱", tag: "tool", level: 1 },
+            "简易木叉": { emoji: "🔱", tag: "tool", level: 1 },
+            
+            // 二级物资
+            "木板": { emoji: "🪵", tag: "material", level: 2 },
+            "粗绳": { emoji: "🪢", tag: "material", level: 2 },
+            "石片": { emoji: "🪨", tag: "material", level: 2 },
+            "木炭": { emoji: "⚫", tag: "material", level: 2 },
+            "简易石斧": { emoji: "🪓", tag: "tool", level: 2 },
+            "木矛": { emoji: "🔱", tag: "tool", level: 2 },
+            "篝火": { emoji: "🔥", tag: "tool", level: 2 },
+            "简易鱼叉": { emoji: "🔱", tag: "tool", level: 2 },
+            "简易信号": { emoji: "📡", tag: "signal", level: 2 },
+            "烤鱼": { emoji: "🐟", tag: "food", level: 2 },
+            "椰肉": { emoji: "🥥", tag: "food", level: 2 },
+            "风干果干": { emoji: "🍎", tag: "food", level: 2 },
+            "烤鸟蛋": { emoji: "🥚", tag: "food", level: 2 },
+            "小兽肉": { emoji: "🍖", tag: "food", level: 2 },
+            
+            // 三级物资
+            "坚韧藤条": { emoji: "🌿", tag: "material", level: 3 },
+            "打磨石片": { emoji: "🪨", tag: "material", level: 3 },
+            "木框架": { emoji: "🪵", tag: "material", level: 3 },
+            "石刀": { emoji: "🔪", tag: "tool", level: 3 },
+            "长矛": { emoji: "🔱", tag: "tool", level: 3 },
+            "火把": { emoji: "🔥", tag: "tool", level: 3 },
+            "捕鱼网": { emoji: "🕸️", tag: "tool", level: 3 },
+            "烤鱼串": { emoji: "🍢", tag: "food", level: 3 },
+            "椰汁": { emoji: "🥥", tag: "food", level: 3 },
+            "熏肉": { emoji: "🥩", tag: "food", level: 3 },
+            "烤兽肉": { emoji: "🍖", tag: "food", level: 3 },
+            "大块鱼肉": { emoji: "🐟", tag: "food", level: 3 },
+            "肉干": { emoji: "🥓", tag: "food", level: 3 },
+            "烟雾信号": { emoji: "💨", tag: "signal", level: 3 },
+            
+            // 四级物资
+            "精制木材": { emoji: "🪵", tag: "material", level: 4 },
+            "石制工具": { emoji: "🪨", tag: "material", level: 4 },
+            "复合工具": { emoji: "🛠️", tag: "tool", level: 4 },
+            "营养餐": { emoji: "🍱", tag: "food", level: 4 },
+            "保存食物": { emoji: "🥫", tag: "food", level: 4 },
+            "精制肉排": { emoji: "🥩", tag: "food", level: 4 },
+            "海鲜大餐": { emoji: "🦞", tag: "food", level: 4 },
+            "大型信号火": { emoji: "🔥", tag: "signal", level: 4 },
+            "信号镜": { emoji: "🪞", tag: "signal", level: 4 }
+        };
+
+        // ============== 合成配方表 ==============
+        // 格式：inputs: [物资1名称, 物资2名称], result: 结果物资名称
+        // 特殊配方：
+        // 1. 篝火（工具）+ 生食（食物）= 熟食（食物）
+        // 2. 锋利工具（石刀/长矛/简易石斧/简易鱼叉/木矛）+ 椰子（原材料）= 椰肉（食物）
+        const FUSION_RECIPES = [
+            // 一级 -> 二级（原材料合成）
+            { inputs: ["木棍", "木棍"], result: "木板" },
+            { inputs: ["藤蔓", "藤蔓"], result: "粗绳" },
+            { inputs: ["石头", "石头"], result: "石片" },
+            { inputs: ["干草", "木棍"], result: "木炭" },
+            
+            // 一级 -> 二级（工具制作）
+            { inputs: ["木棍", "石头"], result: "简易石斧" },
+            { inputs: ["木棍", "石片"], result: "简易石斧" },
+            { inputs: ["木棍", "藤蔓"], result: "木矛" },
+            { inputs: ["干草", "木炭"], result: "篝火" },
+            { inputs: ["木棍", "石片"], result: "简易鱼叉" },
+            
+            // 一级 -> 二级（食物处理）
+            { inputs: ["篝火", "生鱼"], result: "烤鱼" },
+            { inputs: ["篝火", "野果"], result: "风干果干" },
+            { inputs: ["篝火", "海草"], result: "风干果干" },
+            { inputs: ["石刀", "椰子"], result: "椰肉" },
+            { inputs: ["长矛", "椰子"], result: "椰肉" },
+            { inputs: ["简易石斧", "椰子"], result: "椰肉" },
+            { inputs: ["简易鱼叉", "椰子"], result: "椰肉" },
+            { inputs: ["木矛", "椰子"], result: "椰肉" },
+            
+            // 二级 -> 三级（原材料合成）
+            { inputs: ["木板", "粗绳"], result: "木框架" },
+            { inputs: ["粗绳", "粗绳"], result: "坚韧藤条" },
+            { inputs: ["石片", "石片"], result: "打磨石片" },
+            
+            // 二级 -> 三级（工具制作）
+            { inputs: ["石片", "粗绳"], result: "石刀" },
+            { inputs: ["木矛", "石片"], result: "长矛" },
+            { inputs: ["木棍", "木炭"], result: "火把" },
+            { inputs: ["粗绳", "藤蔓"], result: "捕鱼网" },
+            
+            // 二级 -> 三级（食物处理）
+            { inputs: ["篝火", "烤鱼"], result: "烤鱼串" },
+            { inputs: ["椰肉", "椰子"], result: "椰汁" },
+            { inputs: ["篝火", "生鱼"], result: "熏肉" },
+            
+            // 三级 -> 四级（原材料合成）
+            { inputs: ["木框架", "坚韧藤条"], result: "精制木材" },
+            { inputs: ["打磨石片", "石片"], result: "石制工具" },
+            
+            // 三级 -> 四级（工具制作）
+            { inputs: ["石刀", "长矛"], result: "复合工具" },
+            { inputs: ["打磨石片", "贝壳"], result: "信号镜" },
+            
+            // 三级 -> 四级（食物处理）
+            { inputs: ["烤鱼串", "椰汁"], result: "营养餐" },
+            { inputs: ["熏肉", "椰汁"], result: "保存食物" },
+            
+            // 三级 -> 四级（信号制作）
+            { inputs: ["火把", "干草"], result: "大型信号火" },
+            { inputs: ["信号镜", "精制木材"], result: "信号镜" },
+            
+            // 工具升级配方：两个相同工具 -> 更高级工具
+            // Lv2工具 -> Lv3工具
+            { inputs: ["简易石斧", "简易石斧"], result: "石刀" },
+            { inputs: ["木矛", "木矛"], result: "长矛" },
+            { inputs: ["篝火", "篝火"], result: "火把" },
+            { inputs: ["简易鱼叉", "简易鱼叉"], result: "捕鱼网" },
+            
+            // Lv3工具 -> Lv4工具
+            { inputs: ["石刀", "石刀"], result: "复合工具" },
+            { inputs: ["长矛", "长矛"], result: "复合工具" },
+            { inputs: ["火把", "火把"], result: "大型信号火" },
+            { inputs: ["捕鱼网", "捕鱼网"], result: "复合工具" }
+        ];
+
+        // ============== 行动配方表 ==============
+        // 制作工具配方：原材料 -> 工具（80%工具，20%信号）
+        const CRAFT_TOOL_RECIPES = [
+            // 一级原材料 -> 一级工具（只能产生一级工具）
+            { input: "木棍", result: "简易木斧", probability: 0.8, type: "tool" },
+            { input: "木棍", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "石头", result: "简易木斧", probability: 0.8, type: "tool" },
+            { input: "石头", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "藤蔓", result: "简易木矛", probability: 0.8, type: "tool" },
+            { input: "藤蔓", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "干草", result: "简易信号", probability: 1.0, type: "signal" },
+            { input: "椰子", result: "简易信号", probability: 1.0, type: "signal" },
+            { input: "贝壳", result: "简易信号", probability: 1.0, type: "signal" },
+            
+            // 二级原材料 -> 二级工具
+            { input: "木板", result: "简易石斧", probability: 0.8, type: "tool" },
+            { input: "木板", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "粗绳", result: "简易石斧", probability: 0.8, type: "tool" },
+            { input: "粗绳", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "石片", result: "简易石斧", probability: 0.8, type: "tool" },
+            { input: "石片", result: "简易信号", probability: 0.2, type: "signal" },
+            { input: "木炭", result: "篝火", probability: 1.0, type: "tool" },
+            
+            // 三级原材料 -> 三级工具
+            { input: "坚韧藤条", result: "长矛", probability: 0.8, type: "tool" },
+            { input: "坚韧藤条", result: "烟雾信号", probability: 0.2, type: "signal" },
+            { input: "打磨石片", result: "石刀", probability: 0.8, type: "tool" },
+            { input: "打磨石片", result: "烟雾信号", probability: 0.2, type: "signal" },
+            { input: "木框架", result: "长矛", probability: 0.8, type: "tool" },
+            { input: "木框架", result: "烟雾信号", probability: 0.2, type: "signal" },
+            
+            // 四级原材料 -> 四级工具
+            { input: "精制木材", result: "复合工具", probability: 0.8, type: "tool" },
+            { input: "精制木材", result: "大型信号火", probability: 0.2, type: "signal" },
+            { input: "石制工具", result: "复合工具", probability: 0.8, type: "tool" },
+            { input: "石制工具", result: "大型信号火", probability: 0.2, type: "signal" }
+        ];
+
+        // 捕猎/钓鱼/砍伐工具分类
+        // 斧子类工具（用于砍伐产出木材或石头）
+        const AXE_TOOLS = ["简易木斧", "简易石斧", "复合工具"];
+        
+        // 矛/刀类工具（用于打猎产出兽肉类食物）
+        const SPEAR_KNIFE_TOOLS = ["简易木矛", "木矛", "长矛", "石刀", "复合工具"];
+        
+        // 鱼叉/渔网类工具（用于捕鱼产出鱼类食物）
+        const FISHING_TOOLS = ["简易木叉", "简易鱼叉", "捕鱼网"];
+        
+        // 根据工具等级产出对应的木材类物资
+        const AXE_WOOD_OUTPUT = {
+            1: "木棍",    // Lv1斧子 -> 木棍
+            2: "木板",    // Lv2斧子 -> 木板
+            3: "木框架",  // Lv3斧子 -> 木框架
+            4: "精制木材" // Lv4斧子 -> 精制木材
+        };
+        
+        // 根据工具等级产出对应的石头类物资
+        const AXE_STONE_OUTPUT = {
+            1: "石头",      // Lv1斧子 -> 石头
+            2: "石片",      // Lv2斧子 -> 石片
+            3: "打磨石片",  // Lv3斧子 -> 打磨石片
+            4: "石制工具"   // Lv4斧子 -> 石制工具
+        };
+        
+        // 根据工具等级产出对应的兽肉类食物（一级工具只能产出一级食物）
+        const MEAT_OUTPUT = {
+            1: "生肉",      // Lv1矛/刀 -> 生肉
+            2: "小兽肉",    // Lv2矛/刀 -> 小兽肉
+            3: "烤兽肉",    // Lv3矛/刀 -> 烤兽肉
+            4: "精制肉排"   // Lv4矛/刀 -> 精制肉排
+        };
+        
+        // 根据工具等级产出对应的鱼类食物（一级工具只能产出一级食物）
+        const FISH_OUTPUT = {
+            1: "生鱼",      // Lv1鱼叉/网 -> 生鱼
+            2: "生鱼",      // Lv2鱼叉/网 -> 生鱼（二级工具也能捕到一级鱼）
+            3: "大块鱼肉",  // Lv3鱼叉/网 -> 大块鱼肉
+            4: "海鲜大餐"   // Lv4鱼叉/网 -> 海鲜大餐
+        };
+        
+        // 一级工具只能产出的一级原材料（用于斧子类工具）
+        const LEVEL1_MATERIAL_OUTPUT = {
+            wood: "木棍",   // 一级斧子 -> 木棍
+            stone: "石头"   // 一级斧子 -> 石头
+        };
+
+        // 辅助函数：查找制作工具配方
+        function findCraftToolRecipe(material) {
+            const materialLevel = material.level || 1;
+            let recipes = CRAFT_TOOL_RECIPES.filter(r => r.input === material.text);
+            
+            // 如果是一级原材料，只返回一级工具的配方
+            if (materialLevel === 1) {
+                recipes = recipes.filter(r => {
+                    const resultInfo = MATERIAL_DATABASE[r.result];
+                    return resultInfo && resultInfo.level === 1;
+                });
+            }
+            
+            if (recipes.length === 0) return null;
+            
+            // 根据概率选择结果（80%工具，20%信号）
+            const rand = Math.random();
+            // 先找工具类配方
+            const toolRecipes = recipes.filter(r => r.type === 'tool');
+            const signalRecipes = recipes.filter(r => r.type === 'signal');
+            
+            if (rand < 0.8 && toolRecipes.length > 0) {
+                // 80%概率返回工具
+                return toolRecipes[Math.floor(Math.random() * toolRecipes.length)];
+            } else if (signalRecipes.length > 0) {
+                // 20%概率返回信号
+                return signalRecipes[Math.floor(Math.random() * signalRecipes.length)];
+            }
+            
+            // 如果没匹配到，返回第一个
+            return recipes[0];
+        }
+
+        // 辅助函数：查找捕猎/钓鱼/砍伐配方
+        function findHuntFishRecipe(tool) {
+            const toolLevel = tool.level || 1;
+            
+            // 如果是斧子类工具，根据概率产出木材或石头
+            if (AXE_TOOLS.includes(tool.text)) {
+                // 一级工具只能产出一级原材料
+                if (toolLevel === 1) {
+                    const rand = Math.random();
+                    if (rand < 0.8) {
+                        return {
+                            input: tool.text,
+                            result: LEVEL1_MATERIAL_OUTPUT.wood,
+                            type: "material"
+                        };
+                    } else {
+                        return {
+                            input: tool.text,
+                            result: LEVEL1_MATERIAL_OUTPUT.stone,
+                            type: "material"
+                        };
+                    }
+                }
+                // 二级及以上工具按原逻辑
+                const rand = Math.random();
+                if (rand < 0.8) {
+                    const woodOutput = AXE_WOOD_OUTPUT[toolLevel] || AXE_WOOD_OUTPUT[1];
+                    return {
+                        input: tool.text,
+                        result: woodOutput,
+                        type: "material"
+                    };
+                } else {
+                    const stoneOutput = AXE_STONE_OUTPUT[toolLevel] || AXE_STONE_OUTPUT[1];
+                    return {
+                        input: tool.text,
+                        result: stoneOutput,
+                        type: "material"
+                    };
+                }
+            }
+            
+            // 如果是矛/刀类工具，产出兽肉类食物
+            if (SPEAR_KNIFE_TOOLS.includes(tool.text)) {
+                // 一级工具只能产出一级食物
+                if (toolLevel === 1) {
+                    return {
+                        input: tool.text,
+                        result: "生肉",
+                        type: "food"
+                    };
+                }
+                const meatOutput = MEAT_OUTPUT[toolLevel] || MEAT_OUTPUT[1];
+                return {
+                    input: tool.text,
+                    result: meatOutput,
+                    type: "food"
+                };
+            }
+            
+            // 如果是鱼叉/渔网类工具，产出鱼类食物
+            if (FISHING_TOOLS.includes(tool.text)) {
+                // 一级工具只能产出一级食物
+                if (toolLevel === 1) {
+                    return {
+                        input: tool.text,
+                        result: "生鱼",
+                        type: "food"
+                    };
+                }
+                const fishOutput = FISH_OUTPUT[toolLevel] || FISH_OUTPUT[1];
+                return {
+                    input: tool.text,
+                    result: fishOutput,
+                    type: "food"
+                };
+            }
+            
+            // 其他工具（如火把、篝火等）默认产出生鱼（作为备用）
+            return {
+                input: tool.text,
+                result: "生鱼",
+                type: "food"
+            };
+        }
+
+        // 辅助函数：检查两个物资是否可以合成
+        function findRecipe(word1, word2) {
+            const name1 = word1.text;
+            const name2 = word2.text;
+            
+            // 尝试两种顺序匹配
+            for (const recipe of FUSION_RECIPES) {
+                if ((recipe.inputs[0] === name1 && recipe.inputs[1] === name2) ||
+                    (recipe.inputs[0] === name2 && recipe.inputs[1] === name1)) {
+                    return recipe;
+                }
+            }
+            
+            // 特殊配方1：篝火 + 任何一级生食 = 对应熟食
+            const campfire = name1 === "篝火" ? word1 : (name2 === "篝火" ? word2 : null);
+            const rawFood = campfire ? (name1 === "篝火" ? word2 : word1) : null;
+            
+            if (campfire && rawFood && rawFood.tag === "food" && rawFood.level === 1) {
+                // 根据生食类型返回对应的熟食
+                if (rawFood.text === "生鱼") {
+                    return { inputs: [name1, name2], result: "烤鱼" };
+                } else if (rawFood.text === "野果" || rawFood.text === "海草") {
+                    return { inputs: [name1, name2], result: "风干果干" };
+                } else {
+                    // 其他一级生食默认变成风干果干
+                    return { inputs: [name1, name2], result: "风干果干" };
+                }
+            }
+            
+            // 特殊配方2：锋利工具 + 椰子 = 椰肉（包含一级、二级、三级中“带刃/尖端”的工具）
+            const sharpTools = [
+                "简易木斧", "简易木矛", "简易木叉", // Lv1 工具
+                "简易石斧", "简易鱼叉", "木矛",     // Lv2 工具
+                "石刀", "长矛"                      // Lv3 工具
+            ];
+            const isSharpTool = sharpTools.includes(name1) || sharpTools.includes(name2);
+            const coconut = name1 === "椰子" ? word1 : (name2 === "椰子" ? word2 : null);
+            const tool = coconut ? (name1 === "椰子" ? word2 : word1) : null;
+            
+            if (isSharpTool && coconut && coconut.text === "椰子" && coconut.tag === "material" && coconut.level === 1) {
+                return { inputs: [name1, name2], result: "椰肉" };
+            }
+            
+            // 特殊配方3：同级食物（Lv2及以上）可以合成高一级食物
+            if (word1.tag === "food" && word2.tag === "food" && 
+                word1.level === word2.level && word1.level >= 2 && word1.level <= 3) {
+                const currentLevel = word1.level;
+                const nextLevel = currentLevel + 1;
+                
+                // 从MATERIAL_DATABASE中筛选出对应等级的所有食物
+                const availableFoods = Object.entries(MATERIAL_DATABASE)
+                    .filter(([name, info]) => info.tag === "food" && info.level === nextLevel);
+                
+                if (availableFoods.length > 0) {
+                    // 随机选择一个高一级的食物
+                    const [foodName, foodInfo] = availableFoods[Math.floor(Math.random() * availableFoods.length)];
+                    return { inputs: [name1, name2], result: foodName };
+                }
+            }
+            
+            // 特殊配方4：同级工具（Lv1及以上）可以合成高一级工具
+            if (word1.tag === "tool" && word2.tag === "tool" && 
+                word1.level === word2.level && word1.level >= 1 && word1.level <= 3) {
+                const currentLevel = word1.level;
+                const nextLevel = currentLevel + 1;
+                
+                // 从MATERIAL_DATABASE中筛选出对应等级的所有工具
+                const availableTools = Object.entries(MATERIAL_DATABASE)
+                    .filter(([name, info]) => info.tag === "tool" && info.level === nextLevel);
+                
+                if (availableTools.length > 0) {
+                    // 随机选择一个高一级的工具
+                    const [toolName, toolInfo] = availableTools[Math.floor(Math.random() * availableTools.length)];
+                    return { inputs: [name1, name2], result: toolName };
+                }
+            }
+            
+            return null;
+        }
+        // ============== 游戏进度系统 ==============
+        // 荒岛挑战数据（改为预置叙事，不再依赖AI生成）
+        const challenges = [
+            {
+                id: 1,
+                day: 1,
+                title: "挑战一：漂流后的饥渴",
+                description: "你被海浪推上岸，身上还残留着海水。太阳炙烤，嘴唇开裂，附近只剩碎木和几只半腐坏的椰子蟹。日落前必须弄到可入口的东西，否则身体会迅速垮掉。",
+                solutionHint: "优先获取水和食物，简单处理后再入口，别让身体透支。",
+                victoryCondition: { type: 'hasItem', tag: 'food', level: 1, count: 1 },
+                solved: false
+            },
+            {
+                id: 2, 
+                day: 3,
+                title: "挑战二：暴风雨压境",
+                description: "傍晚，海平线上堆起墨色云墙，雷声滚过，潮水拍打礁石。树叶的风向变了，你必须在风暴来临前找到遮蔽或加固营地，否则一夜过后只剩湿透与失温。",
+                solutionHint: "搭个能挡风雨的庇护，准备火种与固定材料，降低失温风险。",
+                victoryCondition: { type: 'shelterStats', sturdy: 50, rain: 50 },
+                solved: false
+            },
+            {
+                id: 3,
+                day: 5,
+                title: "挑战三：暗夜的猎手",
+                description: "夜幕降临，林间传来低沉的喘息与枝叶折断声。某种野兽正在试探你的营地，你必须用声响、火或武器告诉它：这里不好惹。",
+                solutionHint: "火光或武器能威慑，陷阱/尖刺可阻挡靠近。",
+                victoryCondition: { type: 'hasItem', tag: 'tool', level: 3, count: 1 },
+                solved: false
+            },
+            {
+                id: 4,
+                day: 7,
+                title: "挑战四：货轮的微光",
+                description: "第七日黄昏，远处海面出现货轮航灯。留给你的只有几分钟，必须用烟雾、光亮或响声打破海风，把存在感送进船员的视线里。",
+                solutionHint: "信号要高、亮或有浓烟，提升被发现概率。",
+                victoryCondition: { type: 'hasItem', tag: 'signal', level: 4, count: 1 },
+                solved: false
+            }
+        ];
+
+        let currentChallengeIndex = 0;
+        let currentChallenge = challenges[currentChallengeIndex];
+        
+        // 生存基础数值（0-100）
+        // 这里的 hunger 对玩家展示为“饱腹值”
+        let baseStats = {
+            health: 0,
+            hunger: 0
+        };
+        // 庇护所数值（0-100）
+        let shelterStats = {
+            sturdy: 0,
+            rain: 0
+        };
+        const MIN_STAT_FOR_START = 20; // 初始过低直接失败阈值
+        
+        // 合成次数（当前关卡可用）
+        let fusionLeft = 0;
+
+        // 天数与行动点
+        let currentDay = 1;
+        const MAX_DAY = 7;
+        let actionPoints = 7;
+        const MAX_ACTION_POINTS = 10;
+
+        // 行动类型定义：每个行动有固定的数值变化规则（后续按物资等级倍率）
+        const ACTION_TYPES = {
+            craftTool: {
+                name: "制作工具",
+                emoji: "🔧",
+                description: "用物资制作工具或者信号设备",
+                statChanges: { health: -2, hunger: -2 },
+                aiPrompt: "描述玩家如何用这件物资制作一个简单工具，以及工具外观与用途",
+                producesItem: true,
+                itemType: "工具",
+                itemEmoji: "🛠️",
+                tags: ["tool"]
+            },
+            eat: {
+                name: "进食",
+                emoji: "🍚",
+                description: "进食可以补充生命值和饱腹值，并增加行动点",
+                statChanges: { health: +2, hunger: +12 }, // 基础值，会根据食物等级调整
+                aiPrompt: "描述玩家如何处理并食用这件物资，使其可入口且补充体力",
+                producesItem: false
+            },
+            buildShelter: {
+                name: "修建庇护所",
+                emoji: "🏠",
+                description: "加固或建造庇护所，提升安全感",
+                statChanges: { health: 0, hunger: 0 }, // 不再直接修改生命/饱腹，由AI判定庇护提升
+                aiPrompt: "描述玩家如何用这件物资修建或加固庇护所，以及庇护所带来的安全感，并给出对坚固值、防雨值的改善幅度",
+                producesItem: false,
+                improveShelter: true
+            },
+            huntFish: {
+                name: "打猎/钓鱼/砍伐",
+                emoji: "🎣",
+                description: "设陷阱、下水取食或砍伐木材，获取食物或原材料（过程会消耗体力和饱腹值）",
+                statChanges: { health: -4, hunger: -4 },
+                aiPrompt: "描述玩家如何用这件物资进行打猎、钓鱼或砍伐，并获得物资",
+                producesItem: true,
+                itemType: "食物或原材料",
+                itemEmoji: "🍖",
+                tags: ["food", "material"]
+            }
+        };
+
+        // 当前行动槽位中的物资（用于选择行动）
+        let actionSlotItem = null;
+
+        // ============== 生存数值相关函数 ==============
+        function initBaseStats() {
+            // 固定初始数值
+            baseStats.health = 70;
+            baseStats.hunger = 70; // 饱腹值
+            shelterStats.sturdy = 0; // 开局为0
+            shelterStats.rain = 0;   // 开局为0
+            updateBaseStatsUI();
+            updateShelterUI();
+            updateDayAndActionUI();
+            
+            // 如果初始状态就极差，则直接判定为失败开局
+            const minStat = Math.min(baseStats.health, baseStats.hunger);
+            if (minStat < MIN_STAT_FOR_START) {
+                showGameOverScreen("你在被冲上荒岛时就已经伤痕累累、饥渴难耐，没有坚持到真正的求生挑战开始。");
+            }
+        }
+
+        function updateBaseStatsUI() {
+            const clamp = (v) => Math.max(0, Math.min(100, v));
+            const h = clamp(baseStats.health);
+            const hu = clamp(baseStats.hunger);
+
+            const hv = document.getElementById('health-value');
+            const huv = document.getElementById('hunger-value');
+            const hb = document.getElementById('health-bar');
+            const hub = document.getElementById('hunger-bar');
+
+            if (!hv) return; // 页面可能已被结算界面替换
+
+            hv.textContent = h;
+            huv.textContent = hu;
+
+            hb.style.width = h + '%';
+            hub.style.width = hu + '%';
+        }
+
+        function updateShelterUI() {
+            // 庇护所属性变化后检查挑战是否完成
+            checkChallengeCompletion();
+            const clamp = (v) => Math.max(0, Math.min(100, v));
+            const sturdy = clamp(shelterStats.sturdy);
+            const rain = clamp(shelterStats.rain);
+
+            const sv = document.getElementById('sturdy-value');
+            const rv = document.getElementById('rain-value');
+            const sb = document.getElementById('sturdy-bar');
+            const rb = document.getElementById('rain-bar');
+
+            if (!sv) return;
+            sv.textContent = sturdy;
+            rv.textContent = rain;
+            sb.style.width = sturdy + '%';
+            rb.style.width = rain + '%';
+        }
+
+        function applyStatChanges(changes) {
+            const nonZero = {};
+            const keys = ['health', 'hunger'];
+            keys.forEach(k => {
+                const delta = typeof changes[k] === 'number' ? changes[k] : 0;
+                if (delta !== 0) {
+                    baseStats[k] += delta;
+                    nonZero[k] = delta;
+                }
+            });
+            // 夹紧范围
+            baseStats.health = Math.max(0, Math.min(100, baseStats.health));
+            baseStats.hunger = Math.max(0, Math.min(100, baseStats.hunger));
+
+            updateBaseStatsUI();
+            return nonZero;
+        }
+
+        function isDead() {
+            // 任意一项 <= 10 视为撑不住了
+            return baseStats.health <= 10 || baseStats.hunger <= 10;
+        }
+
+        function updateFusionLeftDisplay() {
+            const el = document.getElementById('fusion-left');
+            if (el) el.textContent = fusionLeft;
+        }
+
+        function updateDayAndActionUI() {
+            const el = document.getElementById('day-action-status');
+            if (!el) return;
+            el.textContent = `第 ${currentDay} 天 / ${MAX_DAY} 天 ｜ 今日行动点：${actionPoints}/${MAX_ACTION_POINTS}⚡`;
+        }
+
+        // 检查挑战条件并返回进度信息
+        function checkChallengeProgress(challenge) {
+            if (!challenge || !challenge.victoryCondition) {
+                return { completed: false, progress: '', conditionText: '' };
+            }
+            
+            const condition = challenge.victoryCondition;
+            let completed = false;
+            let current = 0;
+            let required = 1;
+            let conditionText = '';
+            
+            if (condition.type === 'hasItem') {
+                // 检查是否有指定标签和等级的物资
+                const count = countItemsByTag(condition.tag, condition.level);
+                current = count;
+                required = condition.count || 1;
+                completed = count >= required;
+                
+                const tagName = tagLabel(condition.tag);
+                conditionText = `拥有 ${required} 个 Lv${condition.level} ${tagName}类物资`;
+            } else if (condition.type === 'shelterStats') {
+                // 检查庇护所属性
+                const sturdyOk = shelterStats.sturdy >= (condition.sturdy || 0);
+                const rainOk = shelterStats.rain >= (condition.rain || 0);
+                completed = sturdyOk && rainOk;
+                
+                let conditions = [];
+                if (condition.sturdy !== undefined) {
+                    conditions.push(`坚固值 ≥ ${condition.sturdy}`);
+                    if (sturdyOk) current++;
+                }
+                if (condition.rain !== undefined) {
+                    conditions.push(`防雨值 ≥ ${condition.rain}`);
+                    if (rainOk) current++;
+                }
+                required = conditions.length;
+                conditionText = conditions.join(' 且 ');
+            }
+            
+            const progress = completed ? `✅ 已完成` : `(${current}/${required})`;
+            
+            return {
+                completed,
+                progress,
+                conditionText,
+                current,
+                required
+            };
+        }
+
+        // 更新当前挑战显示的辅助函数
+        function updateChallengeDisplay() {
+            document.getElementById('challenge-text').textContent = currentChallenge.title + " - " + (currentChallenge.description || "正在由AI编写详细情景...");
+            document.getElementById('challenge-image').innerHTML = '';
+            
+            // 显示挑战进度
+            const progressText = `挑战 ${currentChallengeIndex + 1} / ${challenges.length}`;
+            if (!document.getElementById('challenge-progress')) {
+                const progressEl = document.createElement('p');
+                progressEl.id = 'challenge-progress';
+                progressEl.style = 'font-size: 0.9em; color: #9d4edd; margin-top: 10px;';
+                document.getElementById('room-display').appendChild(progressEl);
+            }
+            document.getElementById('challenge-progress').textContent = progressText;
+            
+            // 显示挑战条件和进度
+            const progressInfo = checkChallengeProgress(currentChallenge);
+            let conditionEl = document.getElementById('challenge-condition');
+            if (!conditionEl) {
+                conditionEl = document.createElement('div');
+                conditionEl.id = 'challenge-condition';
+                conditionEl.style = 'margin-top: 15px; padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; border-left: 4px solid #fbbf24;';
+                const challengeTextEl = document.getElementById('challenge-text');
+                challengeTextEl.parentNode.insertBefore(conditionEl, challengeTextEl.nextSibling);
+            }
+            
+            if (progressInfo.conditionText) {
+                conditionEl.innerHTML = `
+                    <p style="margin: 0 0 6px 0; color: #fbbf24; font-weight: 500;">📋 达成条件：</p>
+                    <p style="margin: 0 0 6px 0; color: #d1d5db; font-size: 0.95em;">${progressInfo.conditionText}</p>
+                    <p style="margin: 0; color: ${progressInfo.completed ? '#22c55e' : '#fbbf24'}; font-weight: 500;">
+                        进度：${progressInfo.progress}
+                    </p>
+                `;
+            } else {
+                conditionEl.innerHTML = '';
+            }
+            
+            // 拉取AI生成的挑战描述与场景图
+            generateChallengeNarrativeAndImage(currentChallenge);
+        }
+        
+        // 实时检查挑战是否完成
+        async function checkChallengeCompletion() {
+            if (!currentChallenge || currentChallenge.solved) return;
+            
+            const progressInfo = checkChallengeProgress(currentChallenge);
+            if (progressInfo.completed) {
+                // 立即完成挑战
+                currentChallenge.solved = true;
+                
+                // 显示完成提示
+                const resultsDiv = document.getElementById('fusion-results');
+                if (resultsDiv) {
+                    const resultCard = document.createElement('div');
+                    resultCard.className = 'result-card';
+                    resultCard.style.borderLeftColor = '#22c55e';
+                    resultCard.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="font-size: 24px;">🎉</span>
+                            <span style="font-size: 18px; font-weight: 500; color: #22c55e;">挑战完成！</span>
+                        </div>
+                        <p style="margin-bottom: 8px; color: #d1d5db;">
+                            <strong>${currentChallenge.title}</strong> 的达成条件已满足！
+                        </p>
+                        <p style="margin: 0; color: #9ca3af; font-size: 0.9em;">
+                            正在结算挑战...
+                        </p>
+                    `;
+                    resultsDiv.prepend(resultCard);
+                }
+                
+                // 更新显示
+                updateChallengeDisplay();
+                
+                // 立即结算挑战并切换到下一个任务
+                await resolveChallengeImmediately(currentChallenge, true);
+            }
+        }
+        
+        // 立即结算挑战（不等待每日结算）
+        async function resolveChallengeImmediately(challenge, success) {
+            if (isDead()) return;
+            const allItems = [...playerWords];
+            
+            // 根据挑战结果设置数值变化（保留游戏机制）
+            let statChanges = {};
+            if (challenge.id === 1) {
+                // 挑战一：干渴与饥饿
+                if (success) {
+                    statChanges = { health: 0, hunger: +6 };
+                } else {
+                    statChanges = { health: -4, hunger: -10 };
+                }
+            } else if (challenge.id === 2) {
+                // 挑战二：暴风雨
+                if (success) {
+                    statChanges = { health: -2, hunger: -4 };
+                } else {
+                    statChanges = { health: -12, hunger: -6 };
+                }
+            } else if (challenge.id === 3) {
+                // 挑战三：暗夜野兽
+                if (success) {
+                    statChanges = { health: -3, hunger: -4 };
+                } else {
+                    statChanges = { health: -15, hunger: -4 };
+                }
+            } else if (challenge.id === 4) {
+                // 挑战四：货轮逃生
+                if (success) {
+                    statChanges = {};
+                } else {
+                    statChanges = { health: -4, hunger: -6 };
+                }
+            }
+            
+            const challengeTitle = challenge.title;
+
+            // 应用数值变化
+            if (Object.keys(statChanges).length > 0) {
+                applyStatChanges(statChanges);
+            }
+
+            // 如果挑战成功，立即发放奖励（不等待文本生成）
+            if (success && challenge.id !== 4) {
+                grantAiRewardItem(currentChallengeIndex);
+            }
+
+            // 检查是否死亡
+            if (isDead()) {
+                showGameOverScreen("在挑战中，你的状态已经跌至极限，再也撑不下去了。");
+                return;
+            }
+
+            // 异步生成AI描述（不阻塞奖励发放）
+            const eventCardId = 'event-' + Date.now();
+            generateChallengeDescription(challengeTitle, success, allItems, statChanges)
+                .then(aiDescription => {
+                    logDayEventToResultsWithId(challengeTitle, aiDescription || "挑战发生了，你尽力应对。", eventCardId);
+                })
+                .catch(error => {
+                    console.error('生成挑战描述失败:', error);
+                    logDayEventToResultsWithId(challengeTitle, "挑战发生了，你尽力应对。", eventCardId);
+                });
+
+            // 如果挑战成功，立即推进到下一关（但第4个挑战是最终挑战，不推进）
+            if (success && challenge.id !== 4) {
+                // 短暂延迟后推进，让玩家看到结算信息
+                setTimeout(() => {
+                    advanceToNextChallenge();
+                }, 2000);
+            }
+            
+            // 第4个挑战（最终挑战）特殊处理
+            if (challenge.id === 4) {
+                if (success) {
+                    setTimeout(() => {
+                        showVictoryScreen();
+                    }, 2000);
+                } else {
+                    if (!isDead()) {
+                        setTimeout(() => {
+                            showGameOverScreen("你错过了唯一明确的获救机会，只能继续在荒岛上与孤独为伍。");
+                        }, 2000);
+                    }
+                }
+            }
+        }
+
+        // 推进到下一关
+        function advanceToNextChallenge() {
+            // 保存当前挑战索引（用于奖励判断）
+            const completedChallengeIndex = currentChallengeIndex;
+            
+            // 标记当前挑战为已解决
+            challenges[currentChallengeIndex].solved = true;
+            
+            // 检查是否所有挑战都已完成
+            if (currentChallengeIndex >= challenges.length - 1) {
+                // 游戏通关！
+                showVictoryScreen();
+                return;
+            }
+            
+            // 推进到下一关
+            currentChallengeIndex++;
+            currentChallenge = challenges[currentChallengeIndex];
+            
+            // 每个挑战胜利获得4次物资合成机会
+            fusionLeft += 4;
+            updateFusionLeftDisplay();
+            
+            // 短暂延迟后更新显示，让成功反馈停留一会儿
+            setTimeout(() => {
+                updateChallengeDisplay();
+                
+                // 显示一个简单的过渡动画
+                const roomDisplay = document.getElementById('room-display');
+                roomDisplay.style.opacity = '0.7';
+                setTimeout(() => {
+                    roomDisplay.style.opacity = '1';
+                }, 300);
+            }, 2000);
+        }
+
+        // 游戏通关界面
+        function showVictoryScreen() {
+            const roomDisplay = document.getElementById('room-display');
+            roomDisplay.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 80px; margin-bottom: 20px;">🏆</div>
+                    <h2 style="color: #fbbf24;">荒岛求生达人！</h2>
+                    <p>你凭借冷静与创造力，在绝境中存活了下来。</p>
+                    <p>共合成了 <strong style="color: #4cc9f0;">${fusionResults.length}</strong> 个关键物资/工具。</p>
+                    <div id="ending-summary" style="margin-top:20px;"></div>
+                    <div style="margin: 30px 0;">
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+                            color: white;
+                            border: none;
+                            padding: 15px 30px;
+                            border-radius: 25px;
+                            font-size: 18px;
+                            cursor: pointer;
+                            margin: 10px;
+                        ">重新开始</button>
+                    </div>
+                    <p style="font-size: 0.9em; color: #9ca3af; margin-top: 40px;">
+                        "你在荒岛上的一举一动，都悄悄暴露了你的性格。"
+                    </p>
+                </div>
+            `;
+            
+            // 生成基于资源库的性格评语
+            generateEndingSummary(true);
+        }
+
+        // ============== 生图API配置 ==============
+
+        // 注意：你需要根据选择的生图服务商（如DALL-E、Midjourney API、国内平台等）填写以下信息
+        const IMG_API_URL = 'https://api.siliconflow.cn/v1/images/generations'; // 替换为生图API的真实地址
+        const IMG_API_KEY = 'sk-qmqcbvermnhrnqanznlmlfqkwxvijjzfjftflxrhsahmttfa'; // 替换为你的生图API密钥
+        const IMG_MODEL = 'Kwai-Kolors/Kolors'; // 或 'dall-e-2', 'midjourney', 'stable-diffusion-v1-6' 等，根据服务商支持填写
+
+        // 工具函数：将生成的词语转换为适合生图的描述（Prompt）
+        function createImagePrompt(name, description, categoryHint) {
+            // 用于为工具/食物等生成插画
+            return `一幅荒岛求生游戏插画，展示物品"${name}"。
+        场景描述：${description}。
+        风格：写实与插画结合，色彩鲜明，电影分镜感，高清，中心构图，无文字。
+        物品类型提示：${categoryHint || '工具或食物'}，荒岛、求生、自然环境。`;
+        }
+        
+        // 专门用于修建庇护所的生图函数
+        async function generateAndDisplayImageForShelter(materialName, description, placeholderId) {
+            const placeholder = document.getElementById(placeholderId);
+            if (!placeholder) {
+                console.error('找不到图片占位符:', placeholderId);
+                return;
+            }
+
+            // 更新占位符内容为加载状态
+            placeholder.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div class="spinner"></div>
+                    <p>🎨 正在绘制修建庇护所的场景...</p>
+                </div>
+            `;
+
+            // 构建生图请求
+            const imagePrompt = `一幅荒岛求生游戏插画，展示玩家使用【${materialName}】修建或加固庇护所的场景。
+场景描述：${description}
+风格：写实与插画结合，色彩鲜明，电影分镜感，高清，横向构图，无文字。
+重点：展示庇护所的结构、使用的物资【${materialName}】、以及荒岛环境。`;
+
+            const requestBody = {
+                model: IMG_MODEL,
+                prompt: imagePrompt,
+                n: 1,
+                size: "768x512",
+                quality: "standard"
+            };
+
+            try {
+                console.log(`🖼️ 正在请求生成修建庇护所的图片...`);
+
+                const response = await fetch(IMG_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${IMG_API_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`生图API请求失败 (${response.status}): ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('生图API完整响应:', data);
+
+                // 从响应中提取图片URL
+                let imageUrl;
+                
+                if (data.data && data.data[0] && data.data[0].url) {
+                    imageUrl = data.data[0].url;
+                } else if (data.url) {
+                    imageUrl = data.url;
+                } else if (data.data && data.data[0] && data.data[0].b64_json) {
+                    imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
+                } else {
+                    console.warn('无法识别的响应格式，尝试其他路径...', data);
+                    throw new Error('无法从响应中解析图片URL，请检查数据结构。');
+                }
+
+                // 将图片URL插入到页面中
+                placeholder.innerHTML = `
+                    <img src="${imageUrl}" 
+                        alt="修建庇护所" 
+                        style="width:100%; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"
+                        onerror="this.onerror=null; this.parentElement.innerHTML='<p style=\'color:red;\'>⚠️ 图片加载失败</p>';">
+                `;
+            } catch (error) {
+                console.error('生成庇护所图片失败:', error);
+                placeholder.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #ff6b6b;">
+                        <p>⚠️ 图片生成失败</p>
+                        <p style="font-size: 0.9em; opacity: 0.8;">${error.message}</p>
+                    </div>
+                `;
+            }
+    }
+
+        // ============== 游戏状态 ==============
+        let playerWords = [...basicWords];  // 玩家拥有的物资
+        let fusionResults = [];  // 合成记录
+        let selectedWords = [null, null];  // 两个合成槽位
+        let usedWordIds = new Set();  // 已使用的物资ID（防止一个物资被拖到多个位置）
+        
+        // ============== 初始化 ==============
+        function initGame() {
+            // 初始化物资库存
+            renderWordInventory();
+            
+            // 初始化随机基础数值
+            initBaseStats();
+            
+            // 初始合成次数（第一关开始前给一次预备合成）
+            fusionLeft = 4;
+            updateFusionLeftDisplay();
+            
+            // 初始化挑战
+            updateChallengeDisplay();
+            
+            // 初始化拖拽功能
+            initDragAndDrop();
+        }
+        
+        // 渲染词语库存
+        function tagLabel(tag) {
+            switch (tag) {
+                case 'food': return '食物';
+                case 'material': return '原材料';
+                case 'tool': return '工具';
+                case 'signal': return '信号';
+                default: return '未知';
+            }
+        }
+
+        function getTagDisplayName(tag) {
+            return tagLabel(tag);
+        }
+
+        function defaultUses(tag) {
+            if (tag === 'material') return 2;
+            if (tag === 'tool') return 5;
+            if (tag === 'food' || tag === 'signal') return 1;
+            return 1;
+        }
+
+        // 生成唯一的物资ID（找到当前最大的ID，然后+1）
+        function getNextWordId() {
+            if (playerWords.length === 0) return 1;
+            const maxId = Math.max(...playerWords.map(w => w.id || 0));
+            return maxId + 1;
+        }
+
+        function consumeItem(item, amount = 1) {
+            item.usesLeft = (item.usesLeft ?? defaultUses(item.tag)) - amount;
+            if (item.usesLeft <= 0) {
+                playerWords = playerWords.filter(w => w.id !== item.id);
+                renderWordInventory();
+            }
+        }
+
+        function renderWordInventory() {
+            // 物资变化后检查挑战是否完成
+            checkChallengeCompletion();
+            const container = document.getElementById('word-inventory');
+            container.innerHTML = '';
+            
+            playerWords.forEach(word => {
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.draggable = true;
+                div.dataset.wordId = word.id;
+                
+                const lvl = word.level || 1;
+                const uses = word.usesLeft ?? defaultUses(word.tag);
+                // 对于工具和原材料，显示使用次数
+                let usesDisplay = '';
+                if (word.tag === 'tool' || word.tag === 'material') {
+                    usesDisplay = ` [${uses}次]`;
+                }
+                div.innerHTML = `
+                    <span class="word-emoji">${word.emoji}</span>
+                    <span>${word.text} (Lv${lvl}·${tagLabel(word.tag)})${usesDisplay}</span>
+                `;
+                
+                div.addEventListener('dragstart', handleDragStart);
+                container.appendChild(div);
+            });
+        }
+        
+        // ============== 拖拽功能 ==============
+        function initDragAndDrop() {
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach((slot, index) => {
+                slot.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    slot.style.borderColor = '#4cc9f0';
+                });
+                
+                slot.addEventListener('dragleave', () => {
+                    slot.style.borderColor = '#f72585';
+                });
+                
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const wordId = e.dataTransfer.getData('text/plain');
+                    
+                    // 确保wordId有效
+                    if (!wordId || wordId === '') {
+                        console.error('无效的物资ID');
+                        return;
+                    }
+                    
+                    // 确保ID类型一致（转换为数字进行比较，因为word.id是数字）
+                    const wordIdNum = parseInt(wordId, 10);
+                    if (isNaN(wordIdNum)) {
+                        console.error('无法解析物资ID:', wordId);
+                        return;
+                    }
+                    
+                    // 使用严格数字匹配查找物资（确保找到正确的物资，即使名称相同）
+                    const word = playerWords.find(w => Number(w.id) === wordIdNum);
+                    
+                    if (word) {
+                        // 检查物资是否已被使用
+                        if (usedWordIds.has(wordIdNum)) {
+                            alert('该物资已被使用，请先清空其他位置！');
+                            return;
+                        }
+                        
+                        // 如果这个槽位之前有物资，先取消之前的标记
+                        if (selectedWords[index]) {
+                            const oldWordId = selectedWords[index].id;
+                            usedWordIds.delete(oldWordId);
+                        }
+                        
+                        // 标记新物资为已使用
+                        usedWordIds.add(wordIdNum);
+                        // 确保使用找到的物资对象，而不是通过其他方式获取
+                        selectedWords[index] = word;
+                        slot.innerHTML = `
+                            <div>${word.emoji} ${word.text} (Lv${word.level || 1})</div>
+                        `;
+                        slot.style.borderColor = '#4cc9f0';
+                        slot.style.background = 'rgba(76, 201, 240, 0.1)';
+                    } else {
+                        console.error('找不到物资，wordId:', wordId, 'wordIdNum:', wordIdNum);
+                        console.log('当前物资库:', playerWords.map(w => ({id: w.id, text: w.text})));
+                        alert(`无法找到物资（ID: ${wordId}），请重试。`);
+                    }
+                });
+            });
+    
+            // 行动槽位的拖拽处理
+            const actionSlot = document.getElementById('action-slot');
+            if (actionSlot) {
+                actionSlot.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                    actionSlot.style.borderColor = '#22c55e';
+                    actionSlot.style.background = 'rgba(34, 197, 94, 0.1)';
+            });
+            
+                actionSlot.addEventListener('dragleave', () => {
+                    actionSlot.style.borderColor = '#22c55e';
+                    actionSlot.style.background = 'rgba(255, 255, 255, 0.05)';
+            });
+            
+                actionSlot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                    actionSlot.style.borderColor = '#22c55e';
+                    actionSlot.style.background = 'rgba(255, 255, 255, 0.05)';
+                    
+                    if (actionPoints <= 0) {
+                        alert('今日行动点已用完，无法再执行行动。请结束今天。');
+                        return;
+                    }
+                
+                const wordId = e.dataTransfer.getData('text/plain');
+                    
+                    // 确保wordId有效
+                    if (!wordId || wordId === '') {
+                        console.error('无效的物资ID');
+                        return;
+                    }
+                    
+                    // 确保ID类型一致（转换为数字进行比较，因为word.id是数字）
+                    const wordIdNum = parseInt(wordId, 10);
+                    if (isNaN(wordIdNum)) {
+                        console.error('无法解析物资ID:', wordId);
+                        return;
+                    }
+                    
+                    // 检查物资是否已被使用
+                    if (usedWordIds.has(wordIdNum)) {
+                        alert('该物资已被使用，请先清空其他位置！');
+                        return;
+                    }
+                    
+                    // 使用严格匹配查找物资
+                    const word = playerWords.find(w => Number(w.id) === wordIdNum);
+                
+                    if (word) {
+                        // 如果行动槽位之前有物资，先取消之前的标记
+                        if (actionSlotItem) {
+                            const oldWordId = actionSlotItem.id;
+                            usedWordIds.delete(oldWordId);
+                        }
+                        
+                        // 标记新物资为已使用
+                        usedWordIds.add(wordIdNum);
+                        
+                        // 确保使用找到的物资，而不是之前的值
+                        actionSlotItem = word;
+                        actionSlot.innerHTML = `
+                            <div style="font-size: 16px; font-weight: 500; color: #fff;">
+                                ${word.emoji} ${word.text}
+                        </div>
+                        `;
+                        showActionMenu(word);
+                    } else {
+                        console.error('找不到物资，wordId:', wordId, 'wordIdNum:', wordIdNum);
+                        console.log('当前物资库:', playerWords.map(w => ({id: w.id, text: w.text})));
+                        alert(`无法找到物资（ID: ${wordId}），请重试。`);
+                }
+            });
+            }
+        }
+        
+        function handleDragStart(e) {
+            // 使用currentTarget确保获取到正确的元素（包含dataset.wordId的div）
+            // 因为事件监听器绑定在div上，currentTarget应该就是那个div
+            const target = e.currentTarget;
+            let wordId = target.dataset.wordId;
+            
+            // 如果当前元素没有wordId，向上查找
+            if (!wordId) {
+                const closest = target.closest('[data-word-id]');
+                if (closest && closest.dataset.wordId) {
+                    wordId = closest.dataset.wordId;
+                }
+            }
+            
+            if (wordId) {
+                // 确保wordId是字符串格式，并清除可能的空白字符
+                const cleanWordId = String(wordId).trim();
+                const wordIdNum = parseInt(cleanWordId, 10);
+                
+                // 检查物资是否已被使用
+                if (usedWordIds.has(wordIdNum)) {
+                    e.preventDefault();
+                    alert('该物资已被使用，请先清空其他位置！');
+                    return;
+                }
+                
+                e.dataTransfer.setData('text/plain', cleanWordId);
+            } else {
+                console.error('无法找到物资ID:', {
+                    target: target,
+                    dataset: target.dataset,
+                    closest: target.closest('[data-word-id]')
+                });
+            }
+            }
+            
+        // 显示行动选择菜单
+        function showActionMenu(item) {
+            const menuEl = document.getElementById('action-menu');
+            if (!menuEl) return;
+            
+            menuEl.style.display = 'block';
+            menuEl.innerHTML = '<p style="color: #22c55e; margin-bottom: 12px; font-weight: 500;">选择要执行的行动：</p>';
+            
+            const actionsGrid = document.createElement('div');
+            actionsGrid.style.display = 'grid';
+            actionsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            actionsGrid.style.gap = '10px';
+            
+            Object.keys(ACTION_TYPES).forEach(actionKey => {
+                const action = ACTION_TYPES[actionKey];
+                const btn = document.createElement('button');
+                btn.style.cssText = `
+                    padding: 12px;
+                    background: rgba(34, 197, 94, 0.1);
+                    border: 2px solid rgba(34, 197, 94, 0.5);
+                    border-radius: 10px;
+                    color: #fff;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    text-align: left;
+                `;
+                btn.innerHTML = `
+                    <div style="font-size: 20px; margin-bottom: 4px;">${action.emoji}</div>
+                    <div style="font-weight: 500; margin-bottom: 2px;">${action.name}</div>
+                    <div style="font-size: 12px; opacity: 0.8;">${action.description}</div>
+                `;
+                btn.onmouseover = () => {
+                    btn.style.background = 'rgba(34, 197, 94, 0.2)';
+                    btn.style.borderColor = '#22c55e';
+                };
+                btn.onmouseout = () => {
+                    btn.style.background = 'rgba(34, 197, 94, 0.1)';
+                    btn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+                };
+                btn.onclick = () => executeAction(actionKey, item);
+                actionsGrid.appendChild(btn);
+            });
+            
+            menuEl.appendChild(actionsGrid);
+        }
+
+        // 执行行动：应用数值变化 + AI反馈
+        async function executeAction(actionKey, item) {
+            const action = ACTION_TYPES[actionKey];
+            if (!action) return;
+            const tag = item.tag || 'material';
+            // 行为校验
+            if (actionKey === 'craftTool' && tag !== 'material') { alert('制作工具只能使用原材料类物资'); return; }
+            if (actionKey === 'eat' && tag !== 'food') { alert('进食只能使用食物类物资'); return; }
+            if (actionKey === 'buildShelter' && tag !== 'material') { alert('修建庇护所只能使用原材料类物资'); return; }
+            if (actionKey === 'huntFish' && tag !== 'tool') { alert('打猎/钓鱼/砍伐需要工具类物资'); return; }
+            
+            // 消耗行动点（进食行动不消耗行动点）
+            if (actionKey !== 'eat') {
+                if (actionPoints <= 0) { alert('今日行动点已用完'); return; }
+                actionPoints -= 1;
+                updateDayAndActionUI();
+            }
+            
+            // 禁用所有行动按钮并显示加载状态
+            const actionMenu = document.getElementById('action-menu');
+            const actionButtons = actionMenu ? actionMenu.querySelectorAll('button') : [];
+            const originalButtonStates = [];
+            actionButtons.forEach((btn, index) => {
+                originalButtonStates[index] = {
+                    disabled: btn.disabled,
+                    innerHTML: btn.innerHTML,
+                    opacity: btn.style.opacity,
+                    cursor: btn.style.cursor
+                };
+                btn.disabled = true;
+                if (btn.innerHTML.includes(action.emoji)) {
+                    btn.innerHTML = `⏳ ${action.name}中...`;
+                }
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            });
+            
+            // 先计算系统默认的数值变化（按物资等级调整）
+            const lvl = item.level || 1;
+            let defaultChanges = {};
+            
+            if (actionKey === 'eat') {
+                // 进食逻辑：系统规定的固定数值，有合理梯度
+                // 一级食物：生的或难咽下的，效果差，可能扣生命值
+                if (lvl === 1) {
+                    defaultChanges = {
+                        health: -1,  // 一级食物可能轻微扣生命值
+                        hunger: 5     // 一级食物加的饱腹值少
+                    };
+                } else if (lvl === 2) {
+                    // 二级食物：简单处理过的，效果一般
+                    defaultChanges = {
+                        health: 3,
+                        hunger: 10
+                    };
+                } else if (lvl === 3) {
+                    // 三级食物：较好处理的，效果不错
+                    defaultChanges = {
+                        health: 6,
+                        hunger: 15
+                    };
+                } else {
+                    // 四级食物：精心制作的，效果很好
+                    defaultChanges = {
+                        health: 10,
+                        hunger: 20
+                    };
+                }
+            } else {
+                // 其他行动：按等级放大
+                const factor = 1 + 0.5 * (lvl - 1); // Lv1=1.0, Lv4=2.5
+                defaultChanges = {
+                    health: Math.round((action.statChanges.health || 0) * factor),
+                    hunger: Math.round((action.statChanges.hunger || 0) * factor)
+                };
+            }
+            
+            // 先按配方表生成物资（制作工具和捕猎/钓鱼），然后再调用AI
+            let newItem = null;
+            let newItemBlock = '';
+            
+            // 按类别消耗输入物资
+            if (actionKey === 'craftTool' || actionKey === 'buildShelter') {
+                if (tag === 'material') consumeItem(item, 1);
+            } else if (actionKey === 'eat') {
+                if (tag === 'food') consumeItem(item, item.usesLeft || 1);
+            } else if (actionKey === 'huntFish') {
+                // 打猎/钓鱼/砍伐使用工具，消耗1次使用次数
+                if (tag === 'tool') consumeItem(item, 1);
+            }
+
+            // 按配方表生成物资（制作工具和捕猎/钓鱼）
+            if (actionKey === 'craftTool') {
+                const recipe = findCraftToolRecipe(item);
+                if (!recipe) {
+                    alert(`无法用【${item.text}】制作工具！`);
+                    actionPoints += 1; // 返还行动点
+                    updateDayAndActionUI();
+                    return;
+                }
+                const resultInfo = MATERIAL_DATABASE[recipe.result];
+                if (!resultInfo) {
+                    alert(`配方错误：找不到物资【${recipe.result}】的信息！`);
+                    actionPoints += 1; // 返还行动点
+                    updateDayAndActionUI();
+                    return;
+                }
+                // 产物等级：严格按照MATERIAL_DATABASE中定义的等级
+                const resultLevel = resultInfo.level || 1;
+                newItem = {
+                    id: getNextWordId(),
+                    text: recipe.result,
+                    emoji: resultInfo.emoji,
+                    tag: resultInfo.tag,
+                    level: resultLevel,
+                    usesLeft: defaultUses(resultInfo.tag),
+                    effects: {}
+                };
+                playerWords.push(newItem);
+                renderWordInventory();
+                newItemBlock = `<p style="margin-bottom: 6px;"><strong>获得物资：</strong>${newItem.emoji} ${newItem.text} (Lv${resultLevel}·${tagLabel(resultInfo.tag)})</p>`;
+            } else if (actionKey === 'huntFish') {
+                const recipe = findHuntFishRecipe(item);
+                if (!recipe) {
+                    alert(`无法用【${item.text}】进行打猎/钓鱼/砍伐！`);
+                    actionPoints += 1; // 返还行动点
+                    updateDayAndActionUI();
+                    return;
+                }
+                const resultInfo = MATERIAL_DATABASE[recipe.result];
+                if (!resultInfo) {
+                    alert(`配方错误：找不到物资【${recipe.result}】的信息！`);
+                    actionPoints += 1; // 返还行动点
+                    updateDayAndActionUI();
+                    return;
+                }
+                // 产物等级：严格按照MATERIAL_DATABASE中定义的等级
+                const resultLevel = resultInfo.level || 1;
+                newItem = {
+                    id: getNextWordId(),
+                    text: recipe.result,
+                    emoji: resultInfo.emoji,
+                    tag: resultInfo.tag,
+                    level: resultLevel,
+                    usesLeft: defaultUses(resultInfo.tag),
+                    effects: {}
+                };
+                playerWords.push(newItem);
+                renderWordInventory();
+                newItemBlock = `<p style="margin-bottom: 6px;"><strong>获得物资：</strong>${newItem.emoji} ${newItem.text} (Lv${resultLevel}·${tagLabel(resultInfo.tag)})</p>`;
+            }
+
+            // 调用AI生成行动描述（只生成描述，不决定数值变化）
+            const aiResult = await generateActionDescription(action, item, newItem);
+            
+            // 进食行动：完全使用系统规定的数值，不使用AI返回的数值
+            let finalChanges = {};
+            if (actionKey === 'eat') {
+                finalChanges = {
+                    health: defaultChanges.health,
+                    hunger: defaultChanges.hunger
+                };
+                
+                // 进食增加行动点：4级食物+3点，2-3级食物+2点，1级食物+1点
+                let actionPointGain = 1;
+                if (lvl === 4) {
+                    actionPointGain = 3;
+                } else if (lvl === 2 || lvl === 3) {
+                    actionPointGain = 2;
+                } else {
+                    actionPointGain = 1;
+                }
+                actionPoints = Math.min(MAX_ACTION_POINTS, actionPoints + actionPointGain);
+                updateDayAndActionUI();
+            } else {
+                // 其他行动：使用AI返回的数值变化（如果AI提供了），否则使用系统默认值
+                let finalHungerDelta = aiResult.hungerDelta !== null ? aiResult.hungerDelta : defaultChanges.hunger;
+                
+                // 打猎/钓鱼/砍伐行动不准增加饱腹值
+                if (actionKey === 'huntFish' && finalHungerDelta > 0) {
+                    finalHungerDelta = 0; // 强制设为0，不允许增加
+                }
+                
+                finalChanges = {
+                    health: aiResult.healthDelta !== null ? aiResult.healthDelta : defaultChanges.health,
+                    hunger: finalHungerDelta
+                };
+            }
+            const nonZeroChanges = applyStatChanges(finalChanges);
+            // 若是建造庇护所，后续由AI决定庇护提升
+            let shelterChangeText = '';
+            
+            // 检查是否死亡
+            if (isDead()) {
+                showGameOverScreen("在执行行动后，你的状态已经跌至极限，再也撑不下去了。");
+                return;
+            }
+            
+            // 显示行动结果（先显示数值变化）
+            const resultsDiv = document.getElementById('fusion-results');
+            const resultCard = document.createElement('div');
+            resultCard.className = 'result-card';
+            resultCard.style.borderLeftColor = '#22c55e';
+            
+            // 构建数值变化显示文本
+            const changeTexts = [];
+            if (nonZeroChanges.health) {
+                changeTexts.push(`生命值 ${nonZeroChanges.health > 0 ? '+' : ''}${nonZeroChanges.health}`);
+            }
+            if (nonZeroChanges.hunger) {
+                changeTexts.push(`饱腹值 ${nonZeroChanges.hunger > 0 ? '+' : ''}${nonZeroChanges.hunger}`);
+            }
+            // 如果是进食行动，显示行动点增加
+            if (actionKey === 'eat') {
+                let actionPointGain = 1;
+                if (lvl === 4) {
+                    actionPointGain = 3;
+                } else if (lvl === 2 || lvl === 3) {
+                    actionPointGain = 2;
+                } else {
+                    actionPointGain = 1;
+                }
+                changeTexts.push(`行动点 +${actionPointGain}`);
+            }
+
+            // 如果是庇护提升，先读取AI返回的提升幅度并更新shelterChangeText
+            if (action.improveShelter && aiResult) {
+                const sturdyDelta = aiResult.sturdyDelta ? parseInt(aiResult.sturdyDelta, 10) : 0;
+                const rainDelta = aiResult.rainDelta ? parseInt(aiResult.rainDelta, 10) : 0;
+                if (!isNaN(sturdyDelta)) {
+                    shelterStats.sturdy = Math.max(0, Math.min(100, shelterStats.sturdy + sturdyDelta));
+                }
+                if (!isNaN(rainDelta)) {
+                    shelterStats.rain = Math.max(0, Math.min(100, shelterStats.rain + rainDelta));
+                }
+                updateShelterUI();
+                const parts = [];
+                if (!isNaN(sturdyDelta) && sturdyDelta !== 0) parts.push(`坚固值${sturdyDelta > 0 ? '+' : ''}${sturdyDelta}`);
+                if (!isNaN(rainDelta) && rainDelta !== 0) parts.push(`防雨值${rainDelta > 0 ? '+' : ''}${rainDelta}`);
+                if (parts.length) {
+                    shelterChangeText = ' | ' + parts.join('，');
+                }
+            }
+
+            // 为修建庇护所生成唯一的图片ID
+            const shelterImageId = actionKey === 'buildShelter' ? `shelter-image-${Date.now()}` : null;
+            
+            resultCard.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="font-size: 24px;">${action.emoji}</span>
+                    <span style="font-size: 18px; font-weight: 500;">${action.name}</span>
+                </div>
+                <p style="margin-bottom: 8px;">
+                    <strong>使用物资：</strong>${item.emoji} ${item.text}
+                </p>
+                ${newItemBlock}
+                <p style="margin-bottom: 8px; color: #4cc9f0;">
+                    <strong>数值变化：</strong>${changeTexts.join('，')}${shelterChangeText}
+                </p>
+                ${shelterImageId ? `<div id="${shelterImageId}" style="margin: 12px 0; border-radius: 8px; overflow: hidden;"></div>` : ''}
+                <div id="action-ai-feedback-${Date.now()}" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px;">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">正在生成行动描述...</p>
+                </div>
+                <div style="text-align: right; font-size: 12px; opacity: 0.7; margin-top: 8px;">
+                    ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+            
+            resultsDiv.prepend(resultCard);
+            const feedbackEl = resultCard.querySelector(`[id^="action-ai-feedback-"]`);
+
+            // 显示AI描述
+            try {
+                const aiDescription = aiResult && aiResult.description ? aiResult.description : '';
+                if (feedbackEl) {
+                    feedbackEl.innerHTML = `
+                        <p style="line-height: 1.6;"><strong>行动过程：</strong>${aiDescription}</p>
+                    `;
+                }
+                
+                // 如果是修建庇护所，生成图片
+                if (actionKey === 'buildShelter' && shelterImageId && aiDescription) {
+                    // 异步生成图片，不阻塞主流程
+                    setTimeout(() => {
+                        generateAndDisplayImageForShelter(item.text, aiDescription, shelterImageId);
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('生成行动描述失败:', error);
+                if (feedbackEl) {
+                    feedbackEl.innerHTML = `
+                        <p style="opacity: 0.7;">你完成了这次行动，虽然过程有些模糊，但结果已经体现在数值变化中。</p>
+                    `;
+            }
+        }
+            
+            // 恢复行动按钮状态（在清空菜单之前）
+            actionButtons.forEach((btn, index) => {
+                if (originalButtonStates[index]) {
+                    btn.disabled = originalButtonStates[index].disabled;
+                    btn.innerHTML = originalButtonStates[index].innerHTML;
+                    btn.style.opacity = originalButtonStates[index].opacity || '1';
+                    btn.style.cursor = originalButtonStates[index].cursor || 'pointer';
+                }
+            });
+            
+            // 清空行动槽位和菜单
+            // 取消行动槽位物资的使用标记
+            if (actionSlotItem) {
+                usedWordIds.delete(actionSlotItem.id);
+            }
+            actionSlotItem = null;
+            const actionSlot = document.getElementById('action-slot');
+            if (actionSlot) {
+                actionSlot.innerHTML = '拖放物资到此处';
+            }
+            const menuEl = document.getElementById('action-menu');
+            if (menuEl) {
+                menuEl.style.display = 'none';
+                menuEl.innerHTML = '';
+            }
+        }
+
+        // 调用AI生成行动描述（必要时返回物资名）
+        async function generateActionDescription(action, item, resultItem = null) {
+            try {
+                // 构建系统提示词
+                let systemPrompt = `你是一个荒岛求生游戏的叙事者。
+请返回JSON，格式：
+{
+  "description": "50-80字行动过程描述",
+  "healthDelta": "整数，可正可负，表示生命值变化（可选，如果不提供则使用系统默认值）",
+  "hungerDelta": "整数，可正可负，表示饱腹值变化（可选，如果不提供则使用系统默认值）",
+  "sturdyDelta": "整数，可正可负，表示庇护坚固值变化（仅修建庇护所时需要）",
+  "rainDelta": "整数，可正可负，表示防雨值变化（仅修建庇护所时需要）"
+}
+重要规则：
+- 对于"制作工具"行动：描述玩家如何使用【${item.text}】制作出【${resultItem ? resultItem.text : '工具'}】的过程。
+- 对于"打猎/钓鱼/砍伐"行动：描述玩家如何使用【${item.text}】进行行动，获得【${resultItem ? resultItem.text : '物资'}】的过程。
+  * 关键：必须根据使用的工具类型和获得的物资类型来生成合理的描述！
+  * 如果使用斧子类工具获得"原材料"（如木棍、石头、木板等），必须描述砍伐树木、挖掘石头等获取原材料的过程，场景应该在森林、石场等。
+  * 如果使用矛/刀类工具获得"兽肉类食物"（如生肉、小兽肉、烤兽肉等），必须描述在丛林、森林中打猎小型动物（如野兔、鸟类等）的过程，场景应该在丛林、森林等。
+  * 如果使用鱼叉/渔网类工具获得"鱼类食物"（如生鱼、大块鱼肉等），必须描述在河流、海边捕鱼的过程，场景应该在水边、海边等。
+  * 描述必须与工具类型和获得的物资完全匹配，不能出现"使用木矛在丛林里捕捉生鱼"这种不合理的情况。
+  * 重要：打猎/钓鱼/砍伐行动会消耗体力和饱腹值，hungerDelta必须是0或负数，不能是正数（不能增加饱腹值）。
+- 对于"修建庇护所"行动：描述玩家如何使用【${item.text}】修建或加固庇护所的过程。根据物资的类型、等级和名称，合理评判对庇护所的改善效果：
+  * 物资类型：工具类物资通常能提供更好的坚固值，原材料类物资可能更适合防雨
+  * 物资等级：等级越高，改善效果越好（Lv1: 5-10, Lv2: 10-15, Lv3: 15-20, Lv4: 20-25）
+  * 物资名称：根据物资的实际用途判断（如"木板"可能更偏向坚固值，"粗绳"可能更偏向防雨值，"篝火"可能两者都有）
+  * 必须给出合理的 sturdyDelta 和 rainDelta（范围 0 到 +25，根据物资特性分配，总和不超过物资等级*8）
+- 对于"进食"行动：描述玩家如何处理并食用【${item.text}】的过程。注意：数值变化由系统规定，AI只需要生成描述，不需要返回healthDelta和hungerDelta。
+- 对于其他行动：healthDelta 和 hungerDelta 是可选的，如果不提供则使用系统默认值。`;
+
+                let userPrompt = `行动类型：${action.name}（${action.description}）
+使用的物资：${item.text} (Lv${item.level || 1}·${tagLabel(item.tag)})
+${resultItem ? `获得的物资：${resultItem.text} (Lv${resultItem.level || 1}·${tagLabel(resultItem.tag)})` : ''}
+${resultItem && action.name === '打猎/钓鱼/砍伐' ? `\n重要：使用的工具是【${item.text}】，获得的物资是【${resultItem.text}】。请根据工具类型和物资类型生成合理的描述：
+- 如果工具是斧子类且获得原材料，描述砍伐/挖掘过程（场景：森林、石场）
+- 如果工具是矛/刀类且获得兽肉类食物，描述打猎过程（场景：丛林、森林）
+- 如果工具是鱼叉/渔网类且获得鱼类食物，描述捕鱼过程（场景：水边、海边）
+不要出现工具类型与场景不匹配的情况（如用木矛在丛林捕鱼）。` : ''}
+${action.aiPrompt}
+请用JSON格式回答。`;
+
+                const response = await fetch(LLM_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${LLM_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: LLM_MODEL_NAME,
+                        messages: [
+                            {
+                                role: "system",
+                                content: systemPrompt
+                            },
+                            {
+                                role: "user",
+                                content: userPrompt
+                            }
+                        ],
+                        temperature: 0.8,
+                        response_format: { "type": "json_object" }
+                    })
+                });
+                
+                if (!response.ok) throw new Error(`AI描述生成失败: ${response.status}`);
+                const data = await response.json();
+                const parsed = JSON.parse(data.choices[0].message.content);
+                
+                // 如果AI提供了数值变化，使用AI的值；否则使用系统默认值
+                const healthDelta = parsed.healthDelta !== undefined ? parseInt(parsed.healthDelta, 10) : null;
+                const hungerDelta = parsed.hungerDelta !== undefined ? parseInt(parsed.hungerDelta, 10) : null;
+                
+                return {
+                    description: parsed.description || '',
+                    healthDelta: healthDelta,
+                    hungerDelta: hungerDelta,
+                    sturdyDelta: parsed.sturdyDelta ? parseInt(parsed.sturdyDelta, 10) : 0,
+                    rainDelta: parsed.rainDelta ? parseInt(parsed.rainDelta, 10) : 0
+                };
+            } catch (error) {
+                console.error('生成行动描述失败:', error);
+                return {
+                    description: `你用${item.text}完成了${action.name}，虽然过程艰难，但总算有所收获。`,
+                    healthDelta: null,
+                    hungerDelta: null,
+                    sturdyDelta: 0,
+                    rainDelta: 0
+                };
+            }
+        }
+        
+        // ============== 核心合成功能 ==============
+        async function performFusion() {
+            const [word1, word2] = selectedWords;
+            
+            if (!word1 || !word2) {
+                alert('请选择两个物资进行合成！');
+                return;
+            }
+            if (fusionLeft <= 0) {
+                alert('本轮合成次数已用尽，请先想办法通过当前挑战！');
+                return;
+            }
+            if (actionPoints <= 0) {
+                alert('今日行动点已用完，无法再进行物资合成。请结束今天。');
+                return;
+            }
+            
+            // 查找配方
+            const recipe = findRecipe(word1, word2);
+            if (!recipe) {
+                alert(`【${word1.text}】和【${word2.text}】无法合成！请查看合成配方表。`);
+                return;
+            }
+            
+            // 获取结果物资信息
+            const resultInfo = MATERIAL_DATABASE[recipe.result];
+            if (!resultInfo) {
+                alert(`配方错误：找不到物资【${recipe.result}】的信息！`);
+                return;
+        }
+
+            // 禁用按钮并显示加载状态
+            const fusionBtn = document.querySelector('.fusion-btn[onclick="performFusion()"]');
+            const originalText = fusionBtn ? fusionBtn.innerHTML : '';
+            if (fusionBtn) {
+                fusionBtn.disabled = true;
+                fusionBtn.innerHTML = '⏳ 合成中...';
+                fusionBtn.style.opacity = '0.6';
+                fusionBtn.style.cursor = 'not-allowed';
+            }
+            
+            // 消耗一次合成次数与行动点
+            fusionLeft -= 1;
+            actionPoints -= 1;
+            updateFusionLeftDisplay();
+            updateDayAndActionUI();
+            
+            // 显示加载状态
+            const resultsDiv = document.getElementById('fusion-results');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'result-card';
+            loadingDiv.innerHTML = `<div style="text-align: center;">🔧 正在尝试合成新的物资...</div>`;
+            resultsDiv.prepend(loadingDiv);
+            
+            try {
+                // 调用大模型API：只生成描述和图片，不决定合成结果
+                const result = await callLLMFusionAPI(
+                    word1.text,
+                    word2.text,
+                    recipe.result
+                );
+                
+                // 移除加载状态
+                resultsDiv.removeChild(loadingDiv);
+                
+                // 将新物资加入库存（使用配方表的结果）
+                const newWord = {
+                    id: getNextWordId(),
+                    text: recipe.result,
+                    emoji: resultInfo.emoji,
+                    tag: resultInfo.tag,
+                    level: resultInfo.level,
+                    usesLeft: defaultUses(resultInfo.tag),
+                    effects: {}
+                };
+                playerWords.push(newWord);
+                renderWordInventory();
+
+                // 消耗原材料/食物/信号的使用次数
+                // 如果是工具类物资合成（两个相同工具合成更高级工具），直接消耗到0（移除）
+                const isToolFusion = word1.tag === 'tool' && word2.tag === 'tool' && word1.text === word2.text;
+                if (isToolFusion) {
+                    // 两个完全相同的工具合成时，直接消耗到0（移除）
+                    playerWords = playerWords.filter(w => w.id !== word1.id && w.id !== word2.id);
+                    renderWordInventory();
+                } else {
+                    // 非工具合成或不同工具合成，按原逻辑消耗
+                    consumeItem(word1, 1);
+                    consumeItem(word2, 1);
+                }
+                
+                // 使用最终名称构造用于展示的合成结果，确保与资源库一致
+                const displayResult = {
+                    word1: word1.text,
+                    word2: word2.text,
+                    itemName: recipe.result,
+                    itemType: getTagDisplayName(resultInfo.tag),
+                    useDescription: result.useDescription,
+                    note: result.note || ''
+                };
+                
+                // 显示结果
+                displayFusionResult(displayResult);
+                
+                // 清空合成槽位
+                resetSlots();
+            } catch (error) {
+                console.error('合成失败:', error);
+                loadingDiv.innerHTML = `<div style="color: #ff6b6b;">❌ 合成失败: ${error.message}</div>`;
+            } finally {
+                // 恢复按钮状态
+                if (fusionBtn) {
+                    fusionBtn.disabled = false;
+                    fusionBtn.innerHTML = originalText;
+                    fusionBtn.style.opacity = '1';
+                    fusionBtn.style.cursor = 'pointer';
+        }
+            }
+        }
+        
+        // 1. 你的API服务商提供的真实请求地址
+        const LLM_API_URL = 'https://api.siliconflow.cn/v1/chat/completions'; 
+        // 2. 你的API服务商提供的密钥
+        const LLM_API_KEY = 'sk-qmqcbvermnhrnqanznlmlfqkwxvijjzfjftflxrhsahmttfa'; 
+        // 3. 指定使用的模型，例如 'deepseek-chat', 'gpt-3.5-turbo' 等，根据服务商支持填写
+        const LLM_MODEL_NAME = 'deepseek-ai/DeepSeek-R1-0528-Qwen3-8B';
+
+        // ============== 核心API调用函数 ==============
+        async function callLLMFusionAPI(word1, word2, resultName) {
+            // 显示加载状态（可选，提升体验）
+            console.log(`🔄 正在调用大模型生成描述: ${word1} + ${word2} = ${resultName}`);
+
+            const requestBody = {
+                model: LLM_MODEL_NAME, // 使用配置的模型名
+                messages: [
+                    {
+                        role: "system",
+                        content: `你是一个"荒岛求生"游戏的描述生成器。
+                        玩家已经通过配方表确定了合成结果：【${resultName}】。
+                        你的任务是：根据玩家使用的两种物资【${word1}】和【${word2}】，生成一段生动的描述，说明玩家是如何在荒岛上通过实际操作得到【${resultName}】的。
+                        
+                        要求：
+                        1. 描述要真实、具体，符合荒岛求生场景
+                        2. 重点描述玩家如何利用【${word1}】和【${word2}】一步步制作或处理得到【${resultName}】的过程
+                        3. 不要出现魔法或超自然现象，要符合物理逻辑
+                        4. 描述长度1-3句话即可
+                        
+                        请严格返回以下JSON格式：
+                        {
+                            "useDescription": "用1-3句话，具体描述玩家是怎么用【${word1}】和【${word2}】动手操作，最终得到【${resultName}】的全过程",
+                            "note": "可选的一句说明：这个【${resultName}】在荒岛生存中主要能帮上什么忙"
+                        }`
+                    },
+                    {
+                        role: "user",
+                        content: `玩家使用【${word1}】和【${word2}】合成出了【${resultName}】。
+                        请生成合成过程的描述。`
+                    }
+                ],
+                temperature: 0.8, // 控制创意程度 (0-1)，0.8比较有创意
+                // 多数服务商要求将返回格式设为JSON，但参数名可能是 response_format 或其它，请查阅文档
+                response_format: { "type": "json_object" }
+        };
+
+    try {
+        // 发送请求到代理服务
+        const response = await fetch(LLM_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // 大多数服务商用 'Authorization' 头传递密钥，格式可能是 'Bearer KEY' 或直接是KEY
+                'Authorization': `Bearer ${LLM_API_KEY}`,
+                // 某些服务商可能有自定义头部，如 'api-key'，请以服务商文档为准
+                // 'api-key': LLM_API_KEY
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        // 检查响应是否成功
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API请求失败 (状态码: ${response.status}): ${errorText}`);
+        }
+
+        // 解析返回的JSON数据
+        const data = await response.json();
+        
+        // 重要：从返回结构中提取内容。不同服务商数据结构不同！
+        // 常见格式1: data.choices[0].message.content (OpenAI/DeepSeek兼容格式)
+        // 常见格式2: data.result 或 data.content
+        let resultContent = data.choices[0].message.content; // 这是最常见的路径
+        
+        // 尝试解析content中的JSON字符串
+        const parsedResult = JSON.parse(resultContent);
+        
+        // 将解析结果与你原有的游戏数据结构对齐并返回
+        return {
+            useDescription: parsedResult.useDescription || `你使用【${word1}】和【${word2}】制作出了【${resultName}】。`,
+            note: parsedResult.note || ''
+        };
+
+    } catch (error) {
+        console.error('❌ 调用大模型API时发生错误:', error);
+        // 提供一个友好的错误回退，防止游戏卡住
+        return {
+            useDescription: `你使用【${word1}】和【${word2}】制作出了【${resultName}】。`,
+            note: `AI 描述生成出错：${error.message}，下次网络状况好点再试试。`
+        };
+    }
+}
+        // ============== 结果展示 ==============
+        function displayFusionResult(result) {
+            const resultsDiv = document.getElementById('fusion-results');
+            const uniqueImageId = 'image-' + Date.now();
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result-card';
+            
+            resultDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="font-size: 24px;">${result.word1}</span>
+                    <span style="font-size: 20px;">+</span>
+                    <span style="font-size: 24px;">${result.word2}</span>
+                    <span style="font-size: 20px;">→</span>
+                    <span style="font-size: 28px; color: #4cc9f0;">${result.itemName}</span>
+                </div>
+                <p style="margin: 6px 0 2px 0;">${result.useDescription}</p>
+                ${result.note ? `<p style="font-size:0.85em; opacity:0.9; margin-top:4px;">提示：${result.note}</p>` : ''}
+                <div id="${uniqueImageId}" style="text-align: center; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px; margin: 10px 0;">
+            <div style="display: inline-block; padding: 20px; background: linear-gradient(45deg, #f72585, #4361ee); border-radius: 50%; margin: 10px;">
+                ⏳
+            </div>
+                    <p><small>正在生成“${result.itemName}”的视觉形象...</small></p>
+            </div>
+                <div style="text-align: right; font-size: 12px; opacity: 0.7;">
+                    ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+            
+            resultsDiv.prepend(resultDiv);
+            fusionResults.push(result);
+            
+            // 如果结果太多，移除旧的
+            if (fusionResults.length > 10) {
+                fusionResults.shift();
+                if (resultsDiv.children.length > 10) {
+                    resultsDiv.removeChild(resultsDiv.lastChild);
+                }
+            }
+            
+            // 注意：这里使用的ID必须和上面占位符的ID完全一致
+            generateAndDisplayImage(result.itemName, result.useDescription || result.note, uniqueImageId);
+        }
+        
+                // ============== 核心生图API调用函数 ==============
+        async function generateAndDisplayImage(name, description, placeholderId) {
+            const placeholder = document.getElementById(placeholderId);
+            if (!placeholder) {
+                console.error('找不到图片占位符:', placeholderId);
+                return;
+            }
+
+            // 更新占位符内容为加载状态
+            placeholder.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div class="spinner"></div>
+                    <p>🎨 正在绘制“${name}”...</p>
+                </div>
+            `;
+
+            // 构建生图请求。注意：不同服务商的请求体格式可能不同！
+            const requestBody = {
+                model: IMG_MODEL,
+                prompt: createImagePrompt(name, description, '合成物资'), // 使用工具函数创建prompt
+                n: 1, // 生成1张横版图
+                size: "768x512", // 改为横向长方形比例，更像关卡/物资场景插画
+                quality: "standard", // 或 "hd" (DALL-E 3)
+                // 部分服务商可能需要其他参数，如 'style', 'negative_prompt' 等
+            };
+
+            try {
+                console.log(`🖼️ 正在请求生成物资“${name}”的图片...`);
+
+                const response = await fetch(IMG_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // 授权方式因服务商而异，请查阅文档
+                        'Authorization': `Bearer ${IMG_API_KEY}`,
+                        // 也可能是: 'api-key': IMG_API_KEY
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`生图API请求失败 (${response.status}): ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('生图API完整响应:', data); // 首次调试时非常重要！
+
+                // **关键步骤：从响应中提取图片URL**
+                // 不同服务商返回的数据结构差异很大，请根据上一步console.log的输出进行调整！
+                let imageUrl;
+                
+                // 1. OpenAI DALL-E 格式
+                if (data.data && data.data[0] && data.data[0].url) {
+                    imageUrl = data.data[0].url;
+                }
+                // 2. 某些服务商可能直接返回一个url字段
+                else if (data.url) {
+                    imageUrl = data.url;
+                }
+                // 3. 某些返回Base64编码的图片数据
+                else if (data.data && data.data[0] && data.data[0].b64_json) {
+                    // 需要将base64转换为可直接显示的URL
+                    imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
+                }
+                // 4. 其他格式...
+                else {
+                    // 如果都不匹配，抛出错误并打印数据结构以便调试
+                    console.warn('无法识别的响应格式，尝试其他路径...', data);
+                    // 可以尝试深入挖掘响应，例如 data.images[0].url
+                    // 请根据你实际使用的服务商文档修改此处
+                    throw new Error('无法从响应中解析图片URL，请检查数据结构。');
+                }
+
+                // 将图片URL插入到页面中
+                placeholder.innerHTML = `
+                    <img src="${imageUrl}" 
+                        class="word-image" 
+                        alt="${name}" 
+                        style="width:100%; border-radius:10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"
+                        onerror="this.onerror=null; this.parentElement.innerHTML='<p style=\'color:red;\'>⚠️ 图片加载失败</p>';">
+                        <!-- 这里不再重复文字标签，纯图像展示 -->
+                `;
+
+            } catch (error) {
+                console.error('❌ 生图失败:', error);
+                // 优雅降级：显示一个美观的占位符，而不是让界面崩溃
+                placeholder.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; color: white;">
+                        <div style="font-size: 48px;">🎨</div>
+                        <p><strong>“${word}”</strong></p>
+                        <p>视觉概念已感知，但未能具现化。</p>
+                        <p style="font-size:0.7em; margin-top:10px;">（技术原因: ${error.message}）</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // ============== 工具函数 ==============
+        function resetSlots() {
+            // 取消合成槽位物资的使用标记
+            selectedWords.forEach(word => {
+                if (word) {
+                    usedWordIds.delete(word.id);
+                }
+            });
+            selectedWords = [null, null];
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach(slot => {
+                slot.innerHTML = '拖放词语';
+                slot.style.background = 'rgba(255, 255, 255, 0.05)';
+                slot.style.borderColor = '#f72585';
+            });
+        }
+        
+        // 清空行动槽位（与执行行动后的清空逻辑一致）
+        function resetActionSlot() {
+            // 取消行动槽位物资的使用标记
+            if (actionSlotItem) {
+                usedWordIds.delete(actionSlotItem.id);
+            }
+            actionSlotItem = null;
+            
+            const actionSlot = document.getElementById('action-slot');
+            if (actionSlot) {
+                actionSlot.innerHTML = '拖放物资到此处';
+            }
+            
+            const menuEl = document.getElementById('action-menu');
+            if (menuEl) {
+                menuEl.style.display = 'none';
+                menuEl.innerHTML = '';
+            }
+        }
+        
+        // ============== 挑战描述与场景图生成 ==============
+        async function generateChallengeNarrativeAndImage(challenge) {
+            // 如果已经有描述则不重复生成
+            if (!challenge || (challenge.description && challenge.description.length > 0)) {
+                if (challenge && challenge.description) {
+                    document.getElementById('challenge-text').textContent = challenge.title + " - " + challenge.description;
+                }
+                return;
+            }
+
+            const challengeTextEl = document.getElementById('challenge-text');
+            const imageContainer = document.getElementById('challenge-image');
+            if (imageContainer) {
+                imageContainer.innerHTML = `
+                    <div style="text-align:center; padding:10px;">
+                        <div class="spinner"></div>
+                        <p>🎨 正在想象这一幕荒岛场景...</p>
+                    </div>
+                `;
+            }
+
+            try {
+                const response = await fetch(LLM_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${LLM_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: LLM_MODEL_NAME,
+                        messages: [
+                            {
+                                role: "system",
+                                content: `你是一个文字叙事设计师，负责为“荒岛求生”游戏写关卡描述。
+                                请用紧张但不血腥的笔触，描写一段2-4句的中文场景文字。
+                                只返回纯文本，不要解释。`
+                            },
+                            {
+                                role: "user",
+                                content: `关卡标题：${challenge.title}
+                                背景提示：${challenge.solutionHint}
+                                请写出这一挑战发生时的具体环境与危机画面。`
+                            }
+                        ],
+                        temperature: 0.8
+                    })
+                });
+
+                if (!response.ok) throw new Error(`生成挑战描述失败: ${response.status}`);
+                const data = await response.json();
+                const text = data.choices && data.choices[0] && data.choices[0].message
+                    ? data.choices[0].message.content.trim()
+                    : '一场突如其来的危机正向你逼近。';
+
+                challenge.description = text;
+                if (challengeTextEl) {
+                    challengeTextEl.textContent = challenge.title + " - " + challenge.description;
+                }
+
+                // 使用生图API为当前挑战生成场景图
+                if (imageContainer) {
+                    const placeholderId = 'challenge-scene-image';
+                    imageContainer.innerHTML = `<div id="${placeholderId}"></div>`;
+                    generateAndDisplayImage(challenge.title, challenge.description, placeholderId);
+                }
+            } catch (e) {
+                console.error('生成挑战描述或图片失败：', e);
+                if (challengeTextEl) {
+                    challengeTextEl.textContent = challenge.title + " - " + (challenge.description || "一场危险正在逼近，你必须迅速做出选择。");
+                }
+                if (imageContainer) {
+                    imageContainer.innerHTML = '';
+                }
+            }
+        }
+        
+        // 通过挑战后给予奖励物资（从配方表中随机选择）
+        function grantAiRewardItem(completedChallengeIndex) {
+            try {
+                // 根据完成的挑战索引决定奖励等级
+                // 第一个挑战（index 0）过后给2级物资
+                // 第二、三挑战（index 1, 2）过后给3级物资
+                let rewardLevel;
+                if (completedChallengeIndex === 0) {
+                    rewardLevel = 2; // 第一个挑战后给2级物资
+                } else if (completedChallengeIndex === 1 || completedChallengeIndex === 2) {
+                    rewardLevel = 3; // 第二、三挑战后给3级物资
+                } else {
+                    // 第四个挑战（最终挑战）不给奖励，因为游戏结束
+                    return;
+                }
+                
+                // 从MATERIAL_DATABASE中筛选出对应等级的所有物资
+                const availableItems = Object.entries(MATERIAL_DATABASE)
+                    .filter(([name, info]) => info.level === rewardLevel);
+                
+                if (availableItems.length === 0) {
+                    console.error(`找不到 Lv${rewardLevel} 的物资作为奖励`);
+                    return;
+                }
+                
+                // 随机选择一个物资
+                const [itemName, itemInfo] = availableItems[Math.floor(Math.random() * availableItems.length)];
+                
+                // 检查是否已拥有该物资（如果已拥有，可以选择另一个）
+                if (!playerWords.some(w => w.text === itemName)) {
+                    const newWord = {
+                        id: getNextWordId(),
+                        text: itemName,
+                        emoji: itemInfo.emoji,
+                        tag: itemInfo.tag,
+                        level: itemInfo.level,
+                        usesLeft: defaultUses(itemInfo.tag)
+                    };
+                    playerWords.push(newWord);
+                    renderWordInventory();
+                    setTimeout(() => {
+                        alert(`🎉 通过挑战，你获得了新的物资：【${newWord.text}】(Lv${newWord.level}·${tagLabel(newWord.tag)})！`);
+                    }, 400);
+                } else {
+                    // 如果已拥有，尝试选择另一个
+                    const otherItems = availableItems.filter(([name]) => !playerWords.some(w => w.text === name));
+                    if (otherItems.length > 0) {
+                        const [otherName, otherInfo] = otherItems[Math.floor(Math.random() * otherItems.length)];
+                        const newWord = {
+                            id: getNextWordId(),
+                            text: otherName,
+                            emoji: otherInfo.emoji,
+                            tag: otherInfo.tag,
+                            level: otherInfo.level,
+                            usesLeft: defaultUses(otherInfo.tag)
+                        };
+                        playerWords.push(newWord);
+                        renderWordInventory();
+                        setTimeout(() => {
+                            alert(`🎉 通过挑战，你获得了新的物资：【${newWord.text}】(Lv${newWord.level}·${tagLabel(newWord.tag)})！`);
+                        }, 400);
+                    } else {
+                        // 如果所有该等级的物资都已拥有，仍然给予一个（允许重复）
+                        const newWord = {
+                            id: getNextWordId(),
+                            text: itemName,
+                            emoji: itemInfo.emoji,
+                            tag: itemInfo.tag,
+                            level: itemInfo.level,
+                            usesLeft: defaultUses(itemInfo.tag)
+                        };
+                        playerWords.push(newWord);
+                        renderWordInventory();
+                        setTimeout(() => {
+                            alert(`🎉 通过挑战，你获得了新的物资：【${newWord.text}】(Lv${newWord.level}·${tagLabel(newWord.tag)})！`);
+                        }, 400);
+                    }
+                }
+            } catch (e) {
+                console.error('奖励物资生成失败：', e);
+            }
+        }
+
+        // ============== 寻找原材料功能 ==============
+        async function findRawMaterial() {
+            // 检查行动点
+            if (actionPoints <= 0) {
+                alert('今日行动点已用完');
+                return;
+            }
+
+            // 检查是否已死亡
+            if (isDead()) {
+                alert('你已无法继续行动');
+                return;
+            }
+
+            // 禁用按钮并显示加载状态，防止重复点击
+            const btn = document.getElementById('find-material-btn');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ 寻找中...';
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            }
+
+            try {
+                // 根据概率决定等级：60% Lv1, 30% Lv2, 10% Lv3
+                const randLevel = Math.random();
+                let materialLevel;
+                if (randLevel < 0.6) {
+                    materialLevel = 1;
+                } else if (randLevel < 0.9) {
+                    materialLevel = 2;
+                } else {
+                    materialLevel = 3;
+                }
+
+                // 根据概率决定物资类型：70%原材料，30%食物
+                const randType = Math.random();
+                const itemType = randType < 0.7 ? 'material' : 'food';
+                const typeName = itemType === 'material' ? '原材料' : '食物';
+
+                // 从MATERIAL_DATABASE中筛选符合等级和类型的物资
+                const availableItems = Object.entries(MATERIAL_DATABASE)
+                    .filter(([name, info]) => 
+                        info.level === materialLevel && 
+                        info.tag === itemType
+                    );
+                
+                if (availableItems.length === 0) {
+                    throw new Error(`找不到 Lv${materialLevel} 的${typeName}类物资`);
+                }
+                
+                // 随机选择一个物资
+                const [itemName, itemInfo] = availableItems[Math.floor(Math.random() * availableItems.length)];
+                const name = itemName;
+                const emoji = itemInfo.emoji;
+
+                // 调用AI生成描述（只生成描述，不生成物资名称）
+                let description = '你在探索中找到了这个物资。';
+                try {
+                    const response = await fetch(LLM_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${LLM_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: LLM_MODEL_NAME,
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: `你是一个荒岛求生游戏的叙事者。
+请根据玩家在荒岛上探索的场景，生成一段简短描述（1-2句话），描述玩家如何找到【${name}】这个物资。
+要求：语言简洁有力，有代入感，符合荒岛求生的氛围。
+返回JSON格式：
+{
+  "description": "简短描述玩家如何找到这个物资（1-2句话）"
+}`
+                                },
+                                {
+                                    role: "user",
+                                    content: `当前第 ${currentDay} 天，玩家找到了【${name}】(Lv${materialLevel}·${typeName})。请生成一段描述。`
+                                }
+                            ],
+                            temperature: 0.8,
+                            response_format: { "type": "json_object" }
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const parsed = JSON.parse(data.choices[0].message.content);
+                        description = parsed.description || description;
+                    }
+                } catch (e) {
+                    console.warn('生成描述失败，使用默认描述:', e);
+                }
+
+                // 创建新物资
+                const newWord = {
+                    id: getNextWordId(),
+                    text: name,
+                    emoji: emoji,
+                    tag: itemType,
+                    level: materialLevel,
+                    usesLeft: defaultUses(itemType)
+                };
+
+                // 添加到资源库
+                playerWords.push(newWord);
+                renderWordInventory();
+
+                // 消耗行动点
+                actionPoints -= 1;
+                updateDayAndActionUI();
+
+                // 显示结果
+                const resultsDiv = document.getElementById('fusion-results');
+                if (resultsDiv) {
+                    const resultCard = document.createElement('div');
+                    resultCard.className = 'result-card';
+                    resultCard.style.borderLeftColor = '#4cc9f0';
+                    resultCard.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="font-size: 24px;">🔍</span>
+                            <span style="font-size: 18px; font-weight: 500;">寻找物资</span>
+                        </div>
+                        <p style="margin-bottom: 8px;">
+                            <strong>获得物资：</strong>${emoji} ${name} (Lv${materialLevel}·${tagLabel(itemType)})
+                        </p>
+                        <p style="margin-bottom: 8px; color: #4cc9f0;">
+                            <strong>数值变化：</strong>行动点 -1
+                        </p>
+                        <div style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px;">
+                            <p style="line-height: 1.6;"><strong>行动过程：</strong>${description}</p>
+                        </div>
+                        <div style="text-align: right; font-size: 12px; opacity: 0.7; margin-top: 8px;">
+                            ${new Date().toLocaleTimeString()}
+                        </div>
+                    `;
+                    resultsDiv.prepend(resultCard);
+                    resultsDiv.scrollTop = 0;
+                }
+
+            } catch (e) {
+                console.error('寻找原材料失败：', e);
+                alert('寻找原材料失败，请稍后再试');
+            } finally {
+                // 恢复按钮状态
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            }
+        }
+        
+        // ============== 游戏结束与性格评语 ==============
+        function calcFinalScore() {
+            // 简单评分：当前两项平均值 + 合成次数奖励
+            const avgStat = (baseStats.health + baseStats.hunger) / 2;
+            const fusionScore = fusionResults.length * 5;
+            return Math.round(avgStat + fusionScore);
+        }
+
+        async function generateEndingSummary(success) {
+            const endingEl = document.getElementById('ending-summary') || document.getElementById('room-display');
+            if (!endingEl) return;
+
+            const score = calcFinalScore();
+            const inventoryText = playerWords.map(w => w.text).join('、');
+            const craftedItemsText = fusionResults
+                .map(r => r.itemName || '')
+                .filter(Boolean)
+                .join('、');
+
+            try {
+                const response = await fetch(LLM_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${LLM_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: LLM_MODEL_NAME,
+                        messages: [
+                            {
+                                role: "system",
+                                content: `你是一个带点温柔毒舌风格的“荒岛求生性格测试”解读者。
+                                请根据玩家在荒岛上【合成出来的物资】以及整体资源选择倾向，为TA生成一段简短的性格解读。
+                                特别注意：请优先从以下方面来总结：
+                                - 他更偏向哪种生存风格？例如：喜欢造工具、囤食物、强化庇护、防御为主、爱折腾信号装置等。
+                                - 这些物资背后体现的是谨慎、冒险、创造力、未雨绸缪，还是“躺平佛系”等性格特征？
+                                - 可以适当引用一两个具体物资作为例子（例如“你造了一堆武器，却忘了多准备点水”）。
+                                返回JSON，格式如下：
+                                {
+                                    "title": "一句概括性的评价（可以有一点点毒舌）",
+                                    "persona": "2-3句话的人格描述，语气轻松幽默，要尽量结合具体物资来举例",
+                                    "advice": "一条简短的人生/处世建议，可以参考TA在荒岛上的偏好"
+                                }`
+                            },
+                            {
+                                role: "user",
+                                content: `通关状态：${success ? '成功获救' : '未能坚持到最后'}
+                                最终评分：${score}
+                                资源库中常见物资：${inventoryText}
+                                合成出来的代表性物资：${craftedItemsText || '本局几乎没有成功合成新的物资'}
+                                当前基础数值：health=${baseStats.health}, hunger=${baseStats.hunger}`
+                            }
+                        ],
+                        temperature: 0.7,
+                        response_format: { "type": "json_object" }
+                    })
+                });
+
+                if (!response.ok) throw new Error(`生成结局评语失败: ${response.status}`);
+                const data = await response.json();
+                const parsed = JSON.parse(data.choices[0].message.content);
+
+                if (endingEl.id === 'ending-summary') {
+                    endingEl.innerHTML = `
+                        <div style="padding:16px; background:rgba(15,23,42,0.7); border-radius:12px; text-align:left;">
+                            <p><strong>最终评分：</strong><span style="color:#4cc9f0;">${score}</span></p>
+                            <p><strong>${parsed.title || '你的荒岛人格'}</strong></p>
+                            <p style="margin-top:6px;">${parsed.persona || ''}</p>
+                            <p style="margin-top:6px; font-size:0.9em; opacity:0.9;"><strong>给你的建议：</strong>${parsed.advice || ''}</p>
+                        </div>
+                    `;
+                } else {
+                    // 失败时可能直接覆盖房间内容
+                    const extra = document.createElement('div');
+                    extra.innerHTML = `
+                        <div style="margin-top:16px; padding:16px; background:rgba(15,23,42,0.7); border-radius:12px; text-align:left;">
+                            <p><strong>最终评分：</strong><span style="color:#4cc9f0;">${score}</span></p>
+                            <p><strong>${parsed.title || '你的荒岛人格'}</strong></p>
+                            <p style="margin-top:6px;">${parsed.persona || ''}</p>
+                            <p style="margin-top:6px; font-size:0.9em; opacity:0.9;"><strong>给你的建议：</strong>${parsed.advice || ''}</p>
+                        </div>
+                    `;
+                    endingEl.appendChild(extra);
+                }
+            } catch (e) {
+                console.error('生成性格评语失败：', e);
+                if (endingEl.id === 'ending-summary') {
+                    endingEl.innerHTML = `<p>最终评分：${score}。你在极端环境中的表现，已经说明你是一个有故事的人。</p>`;
+                }
+            }
+        }
+
+        function showGameOverScreen(reasonText) {
+            const roomDisplay = document.getElementById('room-display');
+            if (!roomDisplay) return;
+
+            roomDisplay.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 80px; margin-bottom: 20px;">💀</div>
+                    <h2 style="color: #f87171;">荒岛求生失败</h2>
+                    <p style="margin-top:10px;">${reasonText}</p>
+                    <div id="ending-summary" style="margin-top:20px;"></div>
+                    <div style="margin: 30px 0;">
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(45deg, #ef4444, #b91c1c);
+                            color: white;
+                            border: none;
+                            padding: 15px 30px;
+                            border-radius: 25px;
+                            font-size: 18px;
+                            cursor: pointer;
+                            margin: 10px;
+                        ">重新开始</button>
+                    </div>
+                </div>
+            `;
+
+            // 生成失败结局的性格评语
+            generateEndingSummary(false);
+        }
+        
+        // ============== 每日结算与固定大事件 ==============
+        function logDayEventToResults(title, description) {
+            const resultsDiv = document.getElementById('fusion-results');
+            if (!resultsDiv) return;
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+                <h4 style="margin:0 0 6px 0; color:#fbbf24;">${title}</h4>
+                <p style="margin:0 0 4px 0; font-size:0.95em;">${description}</p>
+                <div style="text-align:right; font-size:12px; opacity:0.7;">第 ${currentDay} 天</div>
+            `;
+            resultsDiv.prepend(card);
+        }
+
+        function countItemsByTag(tag, minLevel = 1) {
+            return playerWords.filter(w => w.tag === tag && (w.level || 1) >= minLevel).length;
+        }
+
+        async function resolveMajorEventForDay(day) {
+            if (isDead()) return;
+            
+            // 查找对应天数的挑战
+            const challenge = challenges.find(c => c.day === day);
+            if (!challenge) {
+                // 普通日子：轻微消耗描述
+                logDayEventToResults("平静的一天",
+                    "这一天没有发生什么大事，你只是反复检查营地、摆弄手中的工具，试图让自己看起来没那么无助。");
+                return;
+            }
+            
+            // 如果挑战已经完成（在完成时已结算），则不再处理
+            if (challenge.solved) {
+                return;
+            }
+            
+            // 如果挑战未完成，在每日结算时判定为失败
+            const progressInfo = checkChallengeProgress(challenge);
+            const success = progressInfo.completed;
+            
+            // 如果挑战未完成，按失败处理
+            if (!success) {
+                await resolveChallengeImmediately(challenge, false);
+            }
+        }
+
+        // 带ID的事件记录函数
+        function logDayEventToResultsWithId(title, description, cardId) {
+            const resultsDiv = document.getElementById('fusion-results');
+            if (!resultsDiv) return;
+            const card = document.createElement('div');
+            card.id = cardId;
+            card.className = 'result-card';
+            card.innerHTML = `
+                <h4 style="margin:0 0 6px 0; color:#fbbf24;">${title}</h4>
+                <p id="${cardId}-desc" style="margin:0 0 4px 0; font-size:0.95em;">${description}</p>
+                <div style="text-align:right; font-size:12px; opacity:0.7;">第 ${currentDay} 天</div>
+            `;
+            resultsDiv.prepend(card);
+        }
+
+        // 更新事件描述
+        function updateEventDescription(cardId, newDescription) {
+            const descEl = document.getElementById(cardId + '-desc');
+            if (descEl) {
+                descEl.textContent = newDescription;
+            }
+        }
+
+        // 生成挑战描述
+        async function generateChallengeDescription(challengeTitle, success, allItems, statChanges) {
+            try {
+                const itemList = allItems.map(w => w.text).join('、');
+                const response = await fetch(LLM_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${LLM_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: LLM_MODEL_NAME,
+                        messages: [
+                            {
+                                role: "system",
+                                content: `你是一个荒岛求生游戏的叙事者。请根据挑战结果和玩家的准备情况，生成一段60-100字的生动描述，描述玩家如何应对这个挑战，以及结果如何。要求：语言简洁有力，有代入感，符合荒岛求生的紧张氛围。`
+                            },
+                            {
+                                role: "user",
+                                content: `挑战名称：${challengeTitle}
+挑战结果：${success ? '成功应对' : '应对失败'}
+玩家当前拥有的物资：${itemList || '几乎没有物资'}
+数值变化：${JSON.stringify(statChanges)}
+请生成一段生动的挑战应对描述。`
+                            }
+                        ],
+                        temperature: 0.8,
+                        max_tokens: 200
+                    })
+                });
+                
+                if (!response.ok) throw new Error(`AI描述生成失败: ${response.status}`);
+                const data = await response.json();
+                return data.choices[0].message.content.trim();
+            } catch (error) {
+                console.error('生成挑战描述失败:', error);
+                return null;
+            }
+        }
+
+        function endDay() {
+            if (isDead()) return;
+            
+            // 禁用按钮并显示加载状态
+            const endDayBtn = document.querySelector('button[onclick="endDay()"]');
+            const originalText = endDayBtn ? endDayBtn.innerHTML : '';
+            if (endDayBtn) {
+                endDayBtn.disabled = true;
+                endDayBtn.innerHTML = '⏳ 结算中...';
+                endDayBtn.style.opacity = '0.6';
+                endDayBtn.style.cursor = 'not-allowed';
+            }
+            
+            // 每天结束时的基础消耗
+            // 根据庇护所状态决定扣减：系统规定的固定数值，有合理梯度
+            // 坚固值和防雨值越高，扣减越少
+            const sturdy = shelterStats.sturdy || 0;
+            const rain = shelterStats.rain || 0;
+            const avgShelter = (sturdy + rain) / 2; // 平均庇护所属性
+            
+            // 根据平均庇护所属性计算扣减（0-100范围）
+            let healthLoss, hungerLoss;
+            if (avgShelter >= 80) {
+                // 庇护所很好：扣减很少
+                healthLoss = 2;
+                hungerLoss = 4;
+            } else if (avgShelter >= 60) {
+                // 庇护所较好：扣减较少
+                healthLoss = 4;
+                hungerLoss = 6;
+            } else if (avgShelter >= 40) {
+                // 庇护所一般：扣减中等
+                healthLoss = 6;
+                hungerLoss = 8;
+            } else if (avgShelter >= 20) {
+                // 庇护所较差：扣减较多
+                healthLoss = 8;
+                hungerLoss = 10;
+            } else {
+                // 庇护所很差：扣减很多
+                healthLoss = 12;
+                hungerLoss = 14;
+            }
+            
+            applyStatChanges({ health: -healthLoss, hunger: -hungerLoss });
+            logDayEventToResults("日终消耗",
+                `庇护坚固 ${Math.round(shelterStats.sturdy)}，防雨 ${Math.round(shelterStats.rain)}，扣除 生命 ${healthLoss} / 饱腹 ${hungerLoss}`);
+            if (isDead()) {
+                showGameOverScreen("在日复一日的消耗中，你的身体终于支撑不住。");
+                return;
+            }
+
+            // 触发当天固定大事件（异步）
+            resolveMajorEventForDay(currentDay).then(() => {
+                if (isDead()) return;
+                if (currentDay >= MAX_DAY) {
+                    // 第7天事件已处理完，无论成败游戏都结束
+                    // 恢复按钮状态
+                    if (endDayBtn) {
+                        endDayBtn.disabled = false;
+                        endDayBtn.innerHTML = originalText;
+                        endDayBtn.style.opacity = '1';
+                        endDayBtn.style.cursor = 'pointer';
+                    }
+                    return;
+                }
+
+                // 进入下一天
+                currentDay += 1;
+                actionPoints = 7; // 每天开始时重置为7点
+                updateDayAndActionUI();
+                updateChallengeDisplay();
+                
+                // 恢复按钮状态
+                if (endDayBtn) {
+                    endDayBtn.disabled = false;
+                    endDayBtn.innerHTML = originalText;
+                    endDayBtn.style.opacity = '1';
+                    endDayBtn.style.cursor = 'pointer';
+                }
+            }).catch((error) => {
+                console.error('结算失败:', error);
+                // 恢复按钮状态
+                if (endDayBtn) {
+                    endDayBtn.disabled = false;
+                    endDayBtn.innerHTML = originalText;
+                    endDayBtn.style.opacity = '1';
+                    endDayBtn.style.cursor = 'pointer';
+                }
+            });
+        }
+        
+        // ============== 初始化游戏 ==============
+        document.addEventListener('DOMContentLoaded', initGame);
+        
+        // ============== 添加一些互动效果 ==============
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('word-item')) {
+                // 点击词语时的动画
+                e.target.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    e.target.style.transform = '';
+                }, 150);
+            }
+        });
+
+    </script>
+</body>
+</html>
