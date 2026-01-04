@@ -1769,7 +1769,7 @@
                 name: "制作工具",
                 emoji: "🔧",
                 description: "用物资制作工具",
-                statChanges: { survival: -4 },
+                statChanges: { survival: -2 },
                 aiPrompt: "描述玩家如何用这件物资制作一个简单工具，以及工具外观与用途",
                 producesItem: true,
                 itemType: "工具",
@@ -2456,6 +2456,11 @@
         const IMG_API_KEY = 'sk-qmqcbvermnhrnqanznlmlfqkwxvijjzfjftflxrhsahmttfa';
         const IMG_MODEL = 'Kwai-Kolors/Kolors';
         const IMG_SIZE = "1280x720"; 
+
+        // const IMG_API_URL = 'https://api.ark.cn-beijing.volces.com/api/v3/images/generations'; 
+        // const IMG_API_KEY = 'd5948497-96b2-4006-9444-fd0f0d105590';
+        // const IMG_MODEL = 'doubao-seedream-4-5-251128';
+        // const IMG_SIZE = "2560x1440"; 
 
         // 工具函数：将生成的词语转换为适合生图的描述（Prompt）
         function createImagePrompt(name, description, categoryHint) {
@@ -4472,16 +4477,16 @@
                 }
             } else if (actionKey === 'huntFish') {
                 // 打猎/钓鱼/砍伐：工具等级越高，减少的生存状态值越少
-                // Lv1: -10点（上限），Lv2: -7点，Lv3: -4点，Lv4: -2点（下限）
-                let survivalLoss = 10;
+                // Lv1: -6点（上限），Lv2: -4点，Lv3: -2点，Lv4: -1点（下限）
+                let survivalLoss = 6;
                 if (lvl === 1) {
-                    survivalLoss = 10; // 上限
+                    survivalLoss = 6; // 上限
                 } else if (lvl === 2) {
-                    survivalLoss = 7;
-                } else if (lvl === 3) {
                     survivalLoss = 4;
+                } else if (lvl === 3) {
+                    survivalLoss = 2;
                 } else {
-                    survivalLoss = 2; // 下限（Lv4及以上）
+                    survivalLoss = 1; // 下限（Lv4及以上）
                 }
                 defaultChanges = {
                     survival: -survivalLoss
@@ -4637,13 +4642,13 @@
                 finalSurvivalDelta = 0; // 强制设为0，不允许增加
             }
             
-            // 打猎/钓鱼/砍伐行动扣减生存状态值限制在2-10点之间
+            // 打猎/钓鱼/砍伐行动扣减生存状态值限制在1-6点之间
             if (actionKey === 'huntFish' && finalSurvivalDelta < 0) {
                 const totalSurvivalLoss = Math.abs(finalSurvivalDelta);
-                if (totalSurvivalLoss > 10) {
-                    finalSurvivalDelta = -10; // 限制最大扣减为10点（上限）
-                } else if (totalSurvivalLoss < 2) {
-                    finalSurvivalDelta = -2; // 限制最小扣减为2点（下限）
+                if (totalSurvivalLoss > 6) {
+                    finalSurvivalDelta = -6; // 限制最大扣减为6点（上限）
+                } else if (totalSurvivalLoss < 1) {
+                    finalSurvivalDelta = -1; // 限制最小扣减为1点（下限）
                 }
             }
                 
@@ -5921,14 +5926,14 @@
                 
                 // 寻找物资也会消耗体力和生存状态值（类似打猎/钓鱼/砍伐）
                 // 根据天气影响调整扣减：如果受天气影响且失败，扣减更多；如果成功，扣减较少
-                let survivalLoss = -4; // 基础扣减
+                let survivalLoss = -2; // 基础扣减
                 if (isAffectedByWeather) {
                     if (!weatherSuccess) {
                         // 失败时扣减更多（因为天气恶劣且没找到物资）
-                        survivalLoss = -6;
+                        survivalLoss = -4;
                     } else if (isDoubleReward) {
                         // 成功且双倍收益时，扣减较少（因为找到了更多物资，心情好）
-                        survivalLoss = -2;
+                        survivalLoss = -1;
                     }
                 }
                 applyStatChanges({ survival: survivalLoss });
@@ -6299,19 +6304,19 @@ ${isAffectedByWeather ? `当前天气是${currentWeather}，请在描述中体�
             let survivalLoss;
             let shelterDescription;
             if (shelter >= 80) {
-                survivalLoss = 6;
+                survivalLoss = 3;
                 shelterDescription = "坚固的庇护所为你提供了良好的休息环境，虽然荒岛生活仍然艰苦，但至少能让你安稳地度过夜晚。";
             } else if (shelter >= 60) {
-                survivalLoss = 8;
+                survivalLoss = 4;
                 shelterDescription = "庇护所相当坚固，让你度过了一个相对安稳的夜晚，但仍有一些小问题影响了你的休息质量。";
             } else if (shelter >= 40) {
-                survivalLoss = 10;
+                survivalLoss = 5;
                 shelterDescription = "庇护所提供了基本保护，但仍有一些不便让你难以获得充分的休息，夜晚过得不算舒适。";
             } else if (shelter >= 10) {
-                survivalLoss = 13;
+                survivalLoss = 7;
                 shelterDescription = "庇护所还算基本，但夜晚仍然不够舒适，风吹过缝隙让你辗转难眠，消耗了不少体力。";
             } else {
-                survivalLoss = 15;
+                survivalLoss = 10;
                 shelterDescription = "简陋的庇护所让你一晚上没睡好，被风吹雨打折磨得疲惫不堪，身体消耗巨大。";
             }
             
